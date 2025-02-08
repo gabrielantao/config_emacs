@@ -4,12 +4,12 @@
 
 ;; show the positions and line highlith
 (setq column-number-mode t)
-(setq line-number-mode t)
 (global-display-line-numbers-mode t)
 (global-hl-line-mode 0)
 (setq left-fringe-width 10)
 
-
+;; TODO: check because this function has problem whem jump to total number of digits
+;; e.g. when the buffer goes to 100 to 99 (erase one line) or the oposite.
 (defun my-update-line-number-width ()
   "Adjust the `display-line-numbers-width` to the max rows in buffer."
   (setq-local display-line-numbers-width
@@ -18,20 +18,6 @@
 (add-hook 'find-file-hook #'my-update-line-number-width)
 (add-hook 'after-change-major-mode-hook #'my-update-line-number-width)
 (add-hook 'after-save-hook #'my-update-line-number-width)
-
-(global-display-line-numbers-mode 1)
-
-;; configure the parentesis-like closing and marks
-;; TODO: make sure this config for the mismatch works right with lsp servers
-(use-package paren
-  :ensure nil
-  :config
-  (setq show-paren-when-point-inside-paren t
-        show-paren-when-point-in-periphery t)
-  (show-paren-mode 1)
-  (custom-set-faces
-   '(show-paren-match ((t (:background "#44475a" :foreground "#f8f8f2" :weight bold))))
-   '(show-paren-mismatch ((t (:background "red" :foreground "white" :weight bold))))))
 
 ;; scroll of window
 (scroll-bar-mode -1)
@@ -52,7 +38,6 @@
 (setq auto-save-default t)
 
 ;; highlight cursor
-(show-paren-mode 1)
 (setq visible-cursor nil)
 
 ;; Melhora o comportamento do buffer (mais preditivo ao navegar entre buffers)
@@ -84,9 +69,11 @@
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
-
+;; need to do this require just to avid Flycheck erros waterfall
+(require 'straight)
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
+
 
 ;; themes and icons
 (straight-use-package 'ef-themes)
@@ -97,9 +84,53 @@
 (use-package doom-themes
   :config
   (load-theme 'doom-moonlight t))
+(set-face-attribute 'cursor nil :background "magenta")
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 100)
 (setq-default line-spacing 0.3)
+
+;; configure the parentesis-like closing and marks
+;; TODO: make sure this config for the mismatch works right with lsp servers
+;; in this case, just find out other package
+(use-package paren
+  :config
+  (setq show-paren-when-point-inside-paren t
+        show-paren-when-point-in-periphery t)
+  (show-paren-mode 1)
+  (custom-set-faces
+   '(show-paren-match ((t (:background "#44475a" :foreground "#f8f8f2" :weight bold))))
+   '(show-paren-mismatch ((t (:background "red" :foreground "white" :weight bold))))))
+
+(use-package smartparens
+  :init
+  (setq smartparens-auto-insert-p t)
+  :config
+  (smartparens-mode 1))
+
+;; pulsar used to pulse the line when the cursor make movements like jumps
+;; TODO: continue configuring the hooks here
+(use-package pulsar
+  :config
+  (pulsar-global-mode 1) ;; Ativa o pulsar globalmente
+  (setq pulsar-face 'pulsar-magenta)
+  (setq pulsar-delay 0.05)
+  (setq pulsar-iterations 10)
+
+  (dolist (hook '(avy-goto-char
+                  avy-goto-line
+                  other-window
+                  goto-line
+                  ))
+    (add-hook hook #'pulsar-pulse-line)))
+
+
+;; (use-package beacon
+;;   :config
+;;   (beacon-mode 1)
+;;   (setq beacon-blink-when-window-scrolls t)
+;;   (setq beacon-blink-when-window-changes t)
+;;   (setq beacon-blink-when-point-moves t)
+;;   (setq beacon-blink-duration 0.6))
 
 ;; configure the boon mode and use the qwert keybinds
 ;; (use-package boon
@@ -265,7 +296,7 @@
   :commands (lsp lsp-deferred)
   :config
   (lsp-enable-which-key-integration t)
-
+  (setq lsp-diagnostics-provider :flycheck)
   ;; ;; specific configuration for the LSPs used
   ;; (with-eval-after-load 'pylsp
   ;;   (add-hook 'lsp-pylsp-before-initialize-hook
@@ -313,10 +344,10 @@
 (use-package flycheck
   :init
   (global-flycheck-mode))
-(setq lsp-diagnostics-provider :flycheck) 
 
 (use-package magit
   :bind (("C-x g" . magit-status))
   :config
   (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
 
+;;; init.el ends here
