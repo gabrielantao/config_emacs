@@ -1,6 +1,7 @@
 ;; basic configs
 (tool-bar-mode -1)
 (menu-bar-mode -1)
+(setq inhibit-splash-screen t)
 
 ;; show the positions and line highlith
 (setq column-number-mode t)
@@ -74,7 +75,7 @@
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
 
-
+;; IMPROVED GENERAL ASPECT
 ;; themes and icons
 (straight-use-package 'ef-themes)
 (straight-use-package 'catppuccin-theme)
@@ -99,6 +100,10 @@
   (setq dashboard-vertically-center-content t)
   (setq dashboard-show-shortcuts t)
   (setq dashboard-projects-backend 'projectile)
+  (setq dashboard-item-shortcuts '((recents   . "r")
+                                 (bookmarks . "b")
+                                 (projects  . "p")
+                                 (agenda    . "a")))
   (setq dashboard-items '((recents . 5)
                           (bookmarks . 5)
                           (projects  . 5)
@@ -109,7 +114,6 @@
                                   dashboard-insert-newline
                                   ;;dashboard-insert-navigator
                                   ;;dashboard-insert-newline
-                                  ;;dashboard-insert-init-info
                                   dashboard-insert-items
                                   dashboard-insert-newline
                                   dashboard-insert-init-info
@@ -125,9 +129,11 @@
   (dashboard-set-footer t)
   (initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))
 
-(setq inhibit-splash-screen t) ;; Remove a tela de abertura
-;;(setq display-startup-echo-area nil) ;; Remove a mensagem "Loading..."
-;;(setq initial-scratch-message (format "Emacs %s" emacs-version)) ;; Exibe a versão do Emacs
+;; configure the doom modelinew
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom
+  (doom-modeline-height 20))
 
 ;; FIX: highlight colors are no being showed for parentesis-like chars
 ;; but when enter M-x menu it shows fine, investigate it.
@@ -143,6 +149,35 @@
    '(sp-show-pair-mismatch-face
      ((t (:foreground "#faafff" :background "#ff0000" :weight bold))))))
 
+;; IMPROVED NAVIGATION EXPERIENCE
+;; configure the to jump with avy
+(use-package avy
+  :straight t
+  :bind (("M-g a" . avy-goto-char)
+         ("M-g l" . avy-goto-line)
+         ("M-g w" . avy-goto-word-1)
+         ("M-g t" . avy-goto-char-timer))
+  :config
+  (setq avy-background t)
+  (custom-set-faces
+    ;; background color of the face in the windows
+    '(avy-background-face ((t (:foreground "gray40"))))
+    ;; letter to jump
+    '(avy-lead-face ((t (:background "black" :foreground "yellow" :weight bold))))
+    ;; letter with high priority
+    '(avy-lead-face-0 ((t (:background "blue" :foreground "white"))))
+    ;; letter with intermediate priority
+    '(avy-lead-face-1 ((t (:background "green" :foreground "black")))))
+  :custom
+  (avy-timeout-seconds 1.0))
+
+;; fast movement ace-window
+(use-package ace-window
+  :bind ("M-o" . ace-window))
+
+(use-package ace-link
+  :config
+  (ace-link-setup-default))
 
 ;; pulsar used to pulse the line when the cursor make (movements) like jumps
 ;; TODO: continue configuring the hooks here
@@ -153,51 +188,17 @@
   (setq pulsar-face 'pulsar-magenta)
   (setq pulsar-delay 0.05)
   (setq pulsar-iterations 10)
-
+  ;; add hooks for the emacs builtin jump operations
   (dolist (hook '(other-window
                   goto-line))
     (add-hook hook #'pulsar-pulse-line))
-  ;; Adiciona advice para os comandos do avy
-  (dolist (cmd '(avy-goto-char avy-goto-line avy-goto-word-1))
-    (advice-add cmd :after #'pulsar-pulse-line)))
-
-;; configure the boon mode and use the qwert keybinds
-;; (use-package boon
-;;   :config
-;;   (boon-mode 1))
-;; TODO: move these configures to here and annotated better (Org)
-;;(require 'boon-qwerty)
-;;(use-package hydra)
-
-;; (defhydra hydra-move (:exit nil)
-;;   "Movimentação do Cursor"
-;;   ("h" backward-char "← Esquerda")
-;;   ("l" forward-char "→ Direita")
-;;   ("k" previous-line "↑ Cima")
-;;   ("j" next-line "↓ Baixo")
-;;   ("q" nil "Sair" :exit t))
-;; (global-set-key (kbd "C-c m") 'hydra-move/body)
-
-;; (use-package modalka
-;;   :config
-;;   (modalka-global-mode nil))
-;; ;;(modalka-define-key (kbd "m") "C-c m")
+  ;; add advice fir the avy commands
+  ;;(dolist (cmd '(avy-goto-char avy-goto-line avy-goto-word-1))
+  ;;  (advice-add cmd :after #'pulsar-pulse-line))
+  )
 
 
-;; fast movement ace-window
-(use-package ace-window
-  :bind ("M-o" . ace-window))
-
-;; configure the avy to jump
-(use-package avy
-  :bind ("M-s" . avy-goto-char))
-
-;; configure the doom modelinew
-(use-package doom-modeline
-  :init (doom-modeline-mode 1)
-  :custom
-  (doom-modeline-height 20))
-
+;; BETTER ADIVISOR SYSTEMS
 ;; confugure the helpful package
 (use-package helpful
   :bind
@@ -219,25 +220,6 @@
   (which-key-mode)
   (setq which-key-idle-delay 1.0)
   (setq which-key-idle-secondary-delay 0.05))
-
-;; ripgrep
-(use-package rg
-  :config
-  (rg-enable-default-bindings))
-
-;; projectile
-(use-package projectile
-  :init
-  (projectile-mode +1)
- ;; :bind (("C-c p f" . projectile-find-file)
- ;;        ("C-c p p" . projectile-switch-project)
- ;;        ("C-c p g" . projectile-grep)
- ;;        ("C-c p s" . projectile-ripgrep))
-  :config
-  ;;(setq projectile-project-search-path '("~/projects/" "~/code/"))
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-(setq projectile-generic-command "rg --files --hidden")
-
 
 ;; vertigo
 (use-package vertico
@@ -317,6 +299,27 @@
   (nerd-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
+
+;; PROJECTE MANAGEMENT
+;; ripgrep
+(use-package rg
+  :config
+  (rg-enable-default-bindings))
+
+;; projectile
+(use-package projectile
+  :init
+  (projectile-mode +1)
+ ;; :bind (("C-c p f" . projectile-find-file)
+ ;;        ("C-c p p" . projectile-switch-project)
+ ;;        ("C-c p g" . projectile-grep)
+ ;;        ("C-c p s" . projectile-ripgrep))
+  :config
+  ;;(setq projectile-project-search-path '("~/projects/" "~/code/"))
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+(setq projectile-generic-command "rg --files --hidden")
+
+
 ;; IDE features
 (use-package lsp-mode
   :init
@@ -377,6 +380,20 @@
   :bind (("C-x g" . magit-status))
   :config
   (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
+
+;; MODAL EDITIONS
+;; configure the boon mode and use the qwert keybinds
+;; (use-package boon
+;;   :config
+;;   (boon-mode 1))
+;; TODO: move these configures to here and annotated better (Org)
+;;(require 'boon-qwerty)
+;;(use-package hydra)
+
+;; (use-package modalka
+;;   :config
+;;   (modalka-global-mode nil))
+;; ;;(modalka-define-key (kbd "m") "C-c m")
 
 ;; HYDRAS!
 (use-package hydra)
