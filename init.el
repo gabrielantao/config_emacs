@@ -171,17 +171,16 @@
   :custom
   (avy-timeout-seconds 1.0))
 
+;; TODO: DEPRACATED remove because is already using a hydra for windmove(ments)
 ;; fast movement ace-window
-(use-package ace-window
-  :bind ("M-o" . ace-window))
+;; (use-package ace-window
+;;   :bind ("M-g o" . ace-window))
 
 (use-package ace-link
   :config
   (ace-link-setup-default))
 
 ;; pulsar used to pulse the line when the cursor make (movements) like jumps
-;; TODO: continue configuring the hooks here
-;; FIX: it is not working well e.g. for avy goto
 (use-package pulsar
   :config
   (pulsar-global-mode 1) ;; Ativa o pulsar globalmente
@@ -190,11 +189,12 @@
   (setq pulsar-iterations 10)
   ;; add hooks for the emacs builtin jump operations
   (dolist (hook '(other-window
-                  goto-line))
+                  goto-line
+                  recenter-top-bottom
+                  scroll-up
+                  scroll-down
+                  switch-to-buffer))
     (add-hook hook #'pulsar-pulse-line))
-  ;; add advice fir the avy commands
-  ;;(dolist (cmd '(avy-goto-char avy-goto-line avy-goto-word-1))
-  ;;  (advice-add cmd :after #'pulsar-pulse-line))
   )
 
 
@@ -249,9 +249,9 @@
 ;; consult
 (use-package consult
   :bind (("M-y" . consult-yank-pop)          ;; Histórico de copiar/colar (kill-ring)
-         ("M-g g" . consult-goto-line)       ;; Ir para uma linha específica
-         ("M-g i" . consult-imenu)           ;; Navegar por seções do código
-         ("M-g o" . consult-outline))         ;; Outline para documentos estruturados
+         ("M-g -" . consult-goto-line))       ;; Ir para uma linha específica
+         ;;("M-g i" . consult-imenu)           ;; Navegar por seções do código
+         ;;("M-g o" . consult-outline))         ;; Outline para documentos estruturados
          ;;("M-s r" . consult-ripgrep)         ;; Busca por palavras no projeto (ripgrep)
          ;;("M-s l" . consult-line-multi)      ;; Busca em múltiplos buffers
          ;;("M-s g" . consult-git-grep)        ;; Busca dentro do repositório Git
@@ -392,20 +392,15 @@
 
 ;; (use-package modalka
 ;;   :config
-;;   (modalka-global-mode nil))
-;; ;;(modalka-define-key (kbd "m") "C-c m")
+;;   (modalka-mode 1)
+;;   ;; Defina seus próprios atalhos aqui
+;;   (define-key modalka-mode-map (kbd "C-c C-k") 'kill-line)
+;;   (define-key modalka-mode-map (kbd "C-c C-y") 'yank))
+
 
 ;; HYDRAS!
 (use-package hydra)
-
-;; (defhydra hydra-move (:exit nil)
-;;   "Basic navigation mode"
-;;   ("h" backward-char "← left")
-;;   ("l" forward-char "→ right")
-;;   ("k" previous-line "↑ up")
-;;   ("j" next-line "↓ down")
-;;   ("q" nil "quit" :exit t))
-;; (global-set-key (kbd "C-c m") 'hydra-move/body)
+;; (require 'windmove)
 
 (defhydra hydra-sp-move (:exit nil)
   "Navegate with smartparens"
@@ -424,9 +419,33 @@
   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
-  ("q" nil "quit" :exit t))
-(global-set-key (kbd "C-c m") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+  ("q" nil "quit" :exit t :color blue))
+(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
 
 
-;; TODO: criar outras hydras para outros movimentos como com avy, consult, ace-window etc.
+(defhydra hydra-window-nav (:color pink :columns 2)
+  "Window navigation and manipulation"
+  ("j" windmove-left "← left")
+  ("l" windmove-right "→ right")
+  ("k" windmove-down "↓ down")
+  ("i" windmove-up "↑ up")
+  ("J" windmove-swap-states-left "←← swap left")
+  ("L" windmove-swap-states-right "→→ swap right")
+  ("K" windmove-swap-states-down "↓↓ swap down")
+  ("I" windmove-swap-states-up "↑↑ swap up")
+  ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
+  ("g" shrink-window-horizontally "→|← shrink horizontally")
+  ("y" enlarge-window "←|→ enlarge vertically")
+  ("h" shrink-window "→|← shrink vertically")
+  ("a" split-window-vertically "split vertically")
+  ("s" split-window-horizontally "split horizontally")
+  ("d" delete-window "delete window")
+  ("D" delete-other-windows "delete other window")
+  ("o" other-window "other window")
+  ("q" nil "quit" :color blue))
+(global-set-key (kbd "C-c w") 'hydra-window-nav/body)
+
+
+
+;; TODO: criar outras hydras para outros movimentos com consult, etc.
 
