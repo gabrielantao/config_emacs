@@ -69,7 +69,7 @@
       (goto-char (point-max))
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
-;; need to do this require just to avid Flycheck erros waterfall
+;; need to do this require just to avid Flycheck errors waterfall
 (require 'straight)
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
@@ -84,31 +84,69 @@
 (use-package doom-themes
   :config
   (load-theme 'doom-moonlight t))
-(set-face-attribute 'cursor nil :background "magenta")
 
+(set-face-attribute 'cursor nil :background "magenta")
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 100)
 (setq-default line-spacing 0.3)
 
-;; configure the parentesis-like closing and marks
-;; TODO: make sure this config for the mismatch works right with lsp servers
-;; in this case, just find out other package
-(use-package paren
+;; improve the start dashboard
+(use-package dashboard
   :config
-  (setq show-paren-when-point-inside-paren t
-        show-paren-when-point-in-periphery t)
-  (show-paren-mode 1)
-  (custom-set-faces
-   '(show-paren-match ((t (:background "#44475a" :foreground "#f8f8f2" :weight bold))))
-   '(show-paren-mismatch ((t (:background "red" :foreground "white" :weight bold))))))
+  ;;(setq dashboard-image-directory "~/.emacs.d/images/")
+  (setq dashboard-banner-logo-title (format "Welcome to GNU Emacs v%s" emacs-version))
+  (setq dashboard-startup-banner "~/.emacs.d/images/emacs-modern-logo.png")
+  (setq dashboard-center-content t)
+  (setq dashboard-vertically-center-content t)
+  (setq dashboard-show-shortcuts t)
+  (setq dashboard-projects-backend 'projectile)
+  (setq dashboard-items '((recents . 5)
+                          (bookmarks . 5)
+                          (projects  . 5)
+                          (agenda    . 5)))
+  (setq dashboard-startupify-list '(dashboard-insert-banner
+                                  dashboard-insert-newline
+                                  dashboard-insert-banner-title
+                                  dashboard-insert-newline
+                                  ;;dashboard-insert-navigator
+                                  ;;dashboard-insert-newline
+                                  ;;dashboard-insert-init-info
+                                  dashboard-insert-items
+                                  dashboard-insert-newline
+                                  dashboard-insert-init-info
+                                  dashboard-insert-newline
+                                  dashboard-insert-footer))
+  (setq dashboard-heading-shorcut-format " [%s]")
+  (dashboard-setup-startup-hook)
+  :custom
+  (dashboard-set-heading-icons t)
+  (dashboard-set-file-icons t)
+  (dashboard-set-navigator t)
+  (dashboard-set-init-info t)
+  (dashboard-set-footer t)
+  (initial-buffer-choice (lambda () (get-buffer "*dashboard*"))))
 
+(setq inhibit-splash-screen t) ;; Remove a tela de abertura
+;;(setq display-startup-echo-area nil) ;; Remove a mensagem "Loading..."
+;;(setq initial-scratch-message (format "Emacs %s" emacs-version)) ;; Exibe a versão do Emacs
+
+;; FIX: highlight colors are no being showed for parentesis-like chars
+;; but when enter M-x menu it shows fine, investigate it.
 (use-package smartparens
-  :init
-  (setq smartparens-auto-insert-p t)
   :config
-  (smartparens-mode 1))
+  ;;(require 'smartparens-config)  ;; Carrega a configuração padrão
+  (smartparens-global-mode 1)    ;; Ativa o modo globalmente
+  (show-smartparens-global-mode t)
+  
+  (custom-set-faces
+   '(sp-show-pair-match-face
+     ((t (:foreground "#f8f8f2" :background "#44475a" :weight bold))))
+   '(sp-show-pair-mismatch-face
+     ((t (:foreground "#faafff" :background "#ff0000" :weight bold))))))
 
-;; pulsar used to pulse the line when the cursor make movements like jumps
+
+;; pulsar used to pulse the line when the cursor make (movements) like jumps
 ;; TODO: continue configuring the hooks here
+;; FIX: it is not working well e.g. for avy goto
 (use-package pulsar
   :config
   (pulsar-global-mode 1) ;; Ativa o pulsar globalmente
@@ -116,21 +154,12 @@
   (setq pulsar-delay 0.05)
   (setq pulsar-iterations 10)
 
-  (dolist (hook '(avy-goto-char
-                  avy-goto-line
-                  other-window
-                  goto-line
-                  ))
-    (add-hook hook #'pulsar-pulse-line)))
-
-
-;; (use-package beacon
-;;   :config
-;;   (beacon-mode 1)
-;;   (setq beacon-blink-when-window-scrolls t)
-;;   (setq beacon-blink-when-window-changes t)
-;;   (setq beacon-blink-when-point-moves t)
-;;   (setq beacon-blink-duration 0.6))
+  (dolist (hook '(other-window
+                  goto-line))
+    (add-hook hook #'pulsar-pulse-line))
+  ;; Adiciona advice para os comandos do avy
+  (dolist (cmd '(avy-goto-char avy-goto-line avy-goto-word-1))
+    (advice-add cmd :after #'pulsar-pulse-line)))
 
 ;; configure the boon mode and use the qwert keybinds
 ;; (use-package boon
@@ -288,7 +317,6 @@
   (nerd-icons-completion-mode)
   (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
-
 ;; IDE features
 (use-package lsp-mode
   :init
@@ -350,4 +378,38 @@
   :config
   (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
 
-;;; init.el ends here
+;; HYDRAS!
+(use-package hydra)
+
+;; (defhydra hydra-move (:exit nil)
+;;   "Basic navigation mode"
+;;   ("h" backward-char "← left")
+;;   ("l" forward-char "→ right")
+;;   ("k" previous-line "↑ up")
+;;   ("j" next-line "↓ down")
+;;   ("q" nil "quit" :exit t))
+;; (global-set-key (kbd "C-c m") 'hydra-move/body)
+
+(defhydra hydra-sp-move (:exit nil)
+  "Navegate with smartparens"
+  ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
+  ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
+  ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
+  ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
+  ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
+  ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
+  ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
+  ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
+  ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
+  ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
+  ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
+  ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
+  ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
+  ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
+  ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
+  ("q" nil "quit" :exit t))
+(global-set-key (kbd "C-c m") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+
+
+;; TODO: criar outras hydras para outros movimentos como com avy, consult, ace-window etc.
+
