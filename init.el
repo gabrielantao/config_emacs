@@ -76,6 +76,10 @@
 (setq straight-use-package-by-default t)
 
 ;; IMPROVED GENERAL ASPECT
+;; Definição das cores do cursor
+(defvar my-cursor-default-color "magenta"
+  "Default color for the cursor.")
+
 ;; themes and icons
 (straight-use-package 'ef-themes)
 (straight-use-package 'catppuccin-theme)
@@ -86,7 +90,7 @@
   :config
   (load-theme 'doom-moonlight t))
 
-(set-face-attribute 'cursor nil :background "magenta")
+(set-face-attribute 'cursor nil :background  my-cursor-default-color)
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 100)
 (setq-default line-spacing 0.3)
 
@@ -386,22 +390,129 @@
 ;; (use-package boon
 ;;   :config
 ;;   (boon-mode 1))
-;; TODO: move these configures to here and annotated better (Org)
-;;(require 'boon-qwerty)
-;;(use-package hydra)
+;; ;; TODO: move these configures to here and annotated better (Org)
+;; (require 'boon-qwerty)
+;; (define-key boon-moves-map "i"  'previous-line)
+;; (define-key boon-moves-map "o"  'next-line)
 
-;; (use-package modalka
+;; (use-package god-mode
+;;   :ensure t
 ;;   :config
-;;   (modalka-mode 1)
-;;   ;; Defina seus próprios atalhos aqui
-;;   (define-key modalka-mode-map (kbd "C-c C-k") 'kill-line)
-;;   (define-key modalka-mode-map (kbd "C-c C-y") 'yank))
+;;   (global-set-key (kbd "<escape>") #'god-mode-all)
+;;   (which-key-enable-god-mode-support)) ;; Alternar God Mode com ESC
+;; ;; god mode: x, f, b, p, n, e, a, d, g
+;; ;; C-x C-c M-g M-s C-h C-M M-o
+
+;; (defun my-god-mode-update-cursor ()
+;;   "Muda a cor e o tipo do cursor quando o God Mode é ativado ou desativado."
+;;   (if god-local-mode
+;;       ;; when the god mode is activated
+;;       (progn
+;;         (setq cursor-type 'hollow)
+;;         (set-cursor-color "deep sky blue"))
+;;     ;; when the god mode is not activate
+;;     (progn
+;;       (setq cursor-type 'box)
+;;       (set-cursor-color my-cursor-default-color))))
+;; (add-hook 'post-command-hook #'my-god-mode-update-cursor)
+
+;;(use-package modalka
+ ;; :config
+;;  (modalka-mode 1)
+  ;; Defina seus próprios atalhos aqui
+  ;;(define-key modalka-mode-map (kbd "x") (kbd "C-x"))
+ ;; (define-key modalka-mode-map (kbd "C-c C-k") 'kill-line)
+  ;; (define-key modalka-mode-map (kbd "C-c C-y") 'yank)
+;; (modalka-define-kbd "a" "C-a")
+;; (modalka-define-kbd "b" "C-b")
+;; (modalka-define-kbd "e" "C-e")
+;; (modalka-define-kbd "f" "C-f")
+;; (modalka-define-kbd "g" "C-g")
+;; (modalka-define-kbd "n" "C-n")
+;; (modalka-define-kbd "p" "C-p")
+  ;; (modalka-define-kbd "w" "C-w")
+  ;; (modalka-define-kbd "y" "C-y")
+  ;;:bind
+  ;;(("<return>" . modalka-mode)
+ ;; ))
+
+;; TODO change the cursor and normal mode is active
+;; TODO: change to be active in all open buffers
+(use-package ryo-modal
+  :commands ryo-modal-mode
+  :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to be the ESC key
+  :config
+  (ryo-modal-keys
+   ("," ryo-modal-repeat)
+   ("q" ryo-modal-mode)
+   ("ESC" keyboard-quit)
+   ("s" save-buffer)
+   (";" comment-line)
+   ;; TODO: add avy entry (hydra here)
+   ;; move one position
+   ("j" backward-char)
+   ("l" forward-char)
+   ("k" next-line)
+   ("i" previous-line)
+   ;; move jump-like
+   ("u" backward-word)
+   ("o" forward-word)
+   ("U" sp-backward-symbol)
+   ("O" sp-forward-symbol)
+   ("J" beginning-of-line)
+   ("L" end-of-line)
+   ("I" beginning-of-buffer)
+   ("K" end-of-buffer)
+   ;; TODO: review these jumps
+   ;; TODO: add p to call hydra to jump with smartparens
+   ("[" sp-beginning-of-previous-sexp)
+   ("]" sp-beginning-of-next-sexp)
+   ("{" sp-end-of-previous-sexp)
+   ("}" sp-end-of-next-sexp)
+   ;; start a selection (region)
+   ("m" set-mark-command)
+   ;; TODO: add M to call hydra to advanced selection "submode"
+   ;; (e.g. select current line, backward, forward, etc)
+   ;; basic copy/cut/paste commands (kill/yank)
+   ("h" kill-ring-save)
+   ;; TODO: add H for advanced the kill (hydra) advanced mode
+   ("d" kill-region)
+   ("D" kill-whole-line)
+   ("y" yank)
+   )
+  ;; CONCEPT: capitilized words work like "advanced mode" triggering hydras:
+  ;; example D enter "advanced deletion mode" to delete, word, line, paragraph, buffer, etc.
+  ;; M enters "advanced mark (region) mode" to mark with regex, miltucursor etc...
+  
+  ;; TODO: add entry here for avy jump (with general OR check also with hydra)
+  ;; TODO: add entry here for the search/replace f/r
+  ;; TODO: add entry for the mark (region) normal, by word/regex with multicursor functionality
+  ;; TODO: add also the copy/cut/paste (h/H/y), delete (maybe mode only for this) undo entries
+  ;; TODO: add testes-controlado de modo a ver_se_deleta corretamente
+  
+  (ryo-modal-keys
+   ;; First argument to ryo-modal-keys may be a list of keywords.
+   ;; These keywords will be applied to all keybindings.
+   (:norepeat t)
+   ("0" "M-0")
+   ("1" "M-1")
+   ("2" "M-2")
+   ("3" "M-3")
+   ("4" "M-4")
+   ("5" "M-5")
+   ("6" "M-6")
+   ("7" "M-7")
+   ("8" "M-8")
+   ("9" "M-9")))
+
+
 
 
 ;; HYDRAS!
 (use-package hydra)
 ;; (require 'windmove)
 
+;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
 (defhydra hydra-sp-move (:exit nil)
   "Navegate with smartparens"
   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
@@ -422,8 +533,14 @@
   ("q" nil "quit" :exit t :color blue))
 (global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
 
+(defhydra hydra-text-scale (:color pink :timeout 4)
+  "Scale text font."
+  ("i" text-scale-increase "in")
+  ("k" text-scale-decrease "out")
+  ("q" nil "quit" :color blue))
+(global-set-key (kbd "C-c a") 'hydra-text-scale/body)
 
-(defhydra hydra-window-nav (:color pink :columns 2)
+(defhydra hydra-window-nav (:color pink :columns 4)
   "Window navigation and manipulation"
   ("j" windmove-left "← left")
   ("l" windmove-right "→ right")
@@ -442,10 +559,17 @@
   ("d" delete-window "delete window")
   ("D" delete-other-windows "delete other window")
   ("o" other-window "other window")
-  ("q" nil "quit" :color blue))
+  ("q" nil "quit" :color red))
 (global-set-key (kbd "C-c w") 'hydra-window-nav/body)
 
+;; TODO: add hydra here to move window (scroll up/down left/right)
+;; in this put scroll to jump pages or x rows (scroll with the cursor centralized)
 
-
-;; TODO: criar outras hydras para outros movimentos com consult, etc.
-
+;; TODO: criar outras hydras para outros movimentos com consult, e
+;; moves with consult
+;; search/replace
+;; identation
+;; folding
+;; moving between symbols
+;; comment code
+;; move line or region to line X or above/below line
