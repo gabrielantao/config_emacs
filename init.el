@@ -1,4 +1,3 @@
-;; basic configs
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (setq inhibit-splash-screen t)
@@ -200,6 +199,43 @@
                   switch-to-buffer))
     (add-hook hook #'pulsar-pulse-line))
   )
+
+;; keep the same position when scrolling
+(use-package scroll-page-without-moving-point
+  :straight (:host github :repo "tanrax/scroll-page-without-moving-point.el" :files ("scroll-page-without-moving-point.el"))
+  :ensure t)
+
+(defun my-pulsar-scroll-page-up (&optional n)
+  "Scroll up N lines without moving point and pulse the current line."
+  (interactive "p")
+  (dotimes (_ (or n 1))
+    (scroll-page-without-moving-point-up))
+  (pulsar-pulse-line))
+
+(defun my-pulsar-scroll-page-down (&optional n)
+  "Scroll down N lines without moving point and pulse the current line."
+  (interactive "p")
+  (dotimes (_ (or n 1))
+    (scroll-page-without-moving-point-down))
+  (pulsar-pulse-line))
+
+(defun my-pulsar-scroll-page-up-multi (&optional n)
+  "Scroll up N lines without moving point. Pulse if N > 1."
+  (interactive "p")
+  (let ((num-lines (or n 1)))
+    (dotimes (_ num-lines)
+      (scroll-page-without-moving-point-up))
+    (when (> num-lines 1)
+      (pulsar-pulse-line))))
+
+(defun my-pulsar-scroll-page-down-multi (&optional n)
+  "Scroll down N lines without moving point. Pulse if N > 1."
+  (interactive "p")
+  (let ((num-lines (or n 1)))
+    (dotimes (_ num-lines)
+      (scroll-page-without-moving-point-down))
+    (when (> num-lines 1)
+      (pulsar-pulse-line))))
 
 
 ;; BETTER ADIVISOR SYSTEMS
@@ -436,83 +472,14 @@
   ;;(("<return>" . modalka-mode)
  ;; ))
 
-;; TODO change the cursor and normal mode is active
-;; TODO: change to be active in all open buffers
-(use-package ryo-modal
-  :commands ryo-modal-mode
-  :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to be the ESC key
-  :config
-  (ryo-modal-keys
-   ("," ryo-modal-repeat)
-   ("q" ryo-modal-mode)
-   ("ESC" keyboard-quit)
-   ("s" save-buffer)
-   (";" comment-line)
-   ;; TODO: add avy entry (hydra here)
-   ;; move one position
-   ("j" backward-char)
-   ("l" forward-char)
-   ("k" next-line)
-   ("i" previous-line)
-   ;; move jump-like
-   ("u" backward-word)
-   ("o" forward-word)
-   ("U" sp-backward-symbol)
-   ("O" sp-forward-symbol)
-   ("J" beginning-of-line)
-   ("L" end-of-line)
-   ("I" beginning-of-buffer)
-   ("K" end-of-buffer)
-   ;; TODO: review these jumps
-   ;; TODO: add p to call hydra to jump with smartparens
-   ("[" sp-beginning-of-previous-sexp)
-   ("]" sp-beginning-of-next-sexp)
-   ("{" sp-end-of-previous-sexp)
-   ("}" sp-end-of-next-sexp)
-   ;; start a selection (region)
-   ("m" set-mark-command)
-   ;; TODO: add M to call hydra to advanced selection "submode"
-   ;; (e.g. select current line, backward, forward, etc)
-   ;; basic copy/cut/paste commands (kill/yank)
-   ("h" kill-ring-save)
-   ;; TODO: add H for advanced the kill (hydra) advanced mode
-   ("d" kill-region)
-   ("D" kill-whole-line)
-   ("y" yank)
-   )
-  ;; CONCEPT: capitilized words work like "advanced mode" triggering hydras:
-  ;; example D enter "advanced deletion mode" to delete, word, line, paragraph, buffer, etc.
-  ;; M enters "advanced mark (region) mode" to mark with regex, miltucursor etc...
-  
-  ;; TODO: add entry here for avy jump (with general OR check also with hydra)
-  ;; TODO: add entry here for the search/replace f/r
-  ;; TODO: add entry for the mark (region) normal, by word/regex with multicursor functionality
-  ;; TODO: add also the copy/cut/paste (h/H/y), delete (maybe mode only for this) undo entries
-  ;; TODO: add testes-controlado de modo a ver_se_deleta corretamente
-  
-  (ryo-modal-keys
-   ;; First argument to ryo-modal-keys may be a list of keywords.
-   ;; These keywords will be applied to all keybindings.
-   (:norepeat t)
-   ("0" "M-0")
-   ("1" "M-1")
-   ("2" "M-2")
-   ("3" "M-3")
-   ("4" "M-4")
-   ("5" "M-5")
-   ("6" "M-6")
-   ("7" "M-7")
-   ("8" "M-8")
-   ("9" "M-9")))
-
-
-
 
 ;; HYDRAS!
 (use-package hydra)
-;; (require 'windmove)
+;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
+
 
 ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
+;; TODO: review if need these lambda interactive here
 (defhydra hydra-sp-move (:exit nil)
   "Navegate with smartparens"
   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
@@ -533,12 +500,36 @@
   ("q" nil "quit" :exit t :color blue))
 (global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
 
+
 (defhydra hydra-text-scale (:color pink :timeout 4)
-  "Scale text font."
+  "Scale text font"
   ("i" text-scale-increase "in")
   ("k" text-scale-decrease "out")
   ("q" nil "quit" :color blue))
 (global-set-key (kbd "C-c a") 'hydra-text-scale/body)
+
+(defhydra hydra-window-scroll (:hint nil :color red)
+  "
+  Scrolling and Navigation:
+  [_j_] ← scroll left  [_l_] → scroll right
+  [_i_] ↑ scroll up    [_k_] ↓ scroll down
+  [_I_] ↑↑ page up     [_K_] ↓↓ page down
+  [_c_] - recenter
+  [_q_] quit
+"
+  ("l" scroll-left)
+  ("j" scroll-right)
+  ;; configure like this to allow pass number of lines to scroll
+  ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
+  ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
+  ("i" my-pulsar-scroll-page-up-multi)
+  ("k" my-pulsar-scroll-page-down-multi)
+  ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
+  ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
+  ("c" pulsar-recenter-middle)
+  ("q" nil))
+(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
+
 
 (defhydra hydra-window-nav (:color pink :columns 4)
   "Window navigation and manipulation"
@@ -554,13 +545,23 @@
   ("g" shrink-window-horizontally "→|← shrink horizontally")
   ("y" enlarge-window "←|→ enlarge vertically")
   ("h" shrink-window "→|← shrink vertically")
-  ("a" split-window-vertically "split vertically")
-  ("s" split-window-horizontally "split horizontally")
+  ("a" split-window-vertically "|| split vertically")
+  ("s" split-window-horizontally "== split horizontally")
   ("d" delete-window "delete window")
-  ("D" delete-other-windows "delete other window")
+  ("D" delete-other-windows "delete other windows")
   ("o" other-window "other window")
-  ("q" nil "quit" :color red))
+  ("q" nil "quit"))
 (global-set-key (kbd "C-c w") 'hydra-window-nav/body)
+
+
+(defhydra hydra-avy-nav (:color blue)
+  "Avy movements"
+  ("a" avy-goto-char "goto char")
+  ("w" avy-goto-word-1 "goto word")
+  ("l" avy-goto-line "goto line")
+  ("t" avy-goto-char-timer "⏱ goto timer")
+  ("q" nil "quit"))
+(global-set-key (kbd "M-g M-a") 'hydra-avy-nav/body)
 
 ;; TODO: add hydra here to move window (scroll up/down left/right)
 ;; in this put scroll to jump pages or x rows (scroll with the cursor centralized)
@@ -573,3 +574,82 @@
 ;; moving between symbols
 ;; comment code
 ;; move line or region to line X or above/below line
+
+
+;; TODO change the cursor and normal mode is active
+;; TODO: change to be active in all open buffers
+(use-package ryo-modal
+  :commands ryo-modal-mode
+  :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to a better keybiind (maybe ESC)
+  :config
+  (ryo-modal-keys
+   ("," ryo-modal-repeat)
+   ("q" ryo-modal-mode)
+   ;; move one position
+   ("j" backward-char)
+   ("l" forward-char)
+   ("k" next-line)
+   ("i" previous-line)
+   ;; move jump-like
+   ("u" backward-word)
+   ("o" forward-word)
+   ("U" sp-backward-symbol)
+   ("O" sp-forward-symbol)
+   ("J" beginning-of-line)
+   ("L" end-of-line)
+   ("I" beginning-of-buffer)
+   ("K" end-of-buffer)
+   ;; TODO: review these jumps
+   ;; TODO: add p to call hydra to jump with smartparens
+   ("[" sp-beginning-of-previous-sexp)
+   ("]" sp-beginning-of-next-sexp)
+   ("{" sp-end-of-previous-sexp)
+   ("}" sp-end-of-next-sexp)
+
+   ;; TODO: still available keywords
+   ;; Q W eE rR tT Y pP \|
+   ;; A S fF gG ;: '"
+   ;; xX cC vV bB nN M ,< .> /?
+   
+   ;; base command section
+   ("ESC" keyboard-quit)
+   ("s" save-buffer)
+   ("a" hydra-avy-nav/body)
+   ("w" hydra-window-nav/body)
+   ;; TODO: add goto hydra here
+   ("v" hydra-window-scroll/body)
+   (";" comment-line)
+   ;; undo/redo commands
+   ("z" undo)
+   ("Z" undo-redo)
+   ;; start a selection (region)
+   ("m" set-mark-command)
+   ;; TODO: add M to call hydra to advanced selection "submode"
+   ;; (e.g. select current line, backward, forward, etc)
+   ;; basic copy/cut/paste commands (kill/yank)
+   ("h" kill-ring-save) ;; copy
+   ;; TODO: add H for advanced the kill (hydra) advanced mode
+   ("d" kill-region) ;; cut region
+   ("D" kill-whole-line) ;; cut line
+   ("y" yank) ;; paste
+   )
+  ;; CONCEPT: capitilized words work like "advanced mode" triggering hydras:
+  ;; example D enter "advanced deletion mode" to delete, word, line, paragraph, buffer, etc.
+  ;; M enters "advanced mark (region) mode" to mark with regex, miltucursor etc...
+  ;; TODO: add entry here for the search/replace f/r
+  
+  (ryo-modal-keys
+   ;; First argument to ryo-modal-keys may be a list of keywords.
+   ;; These keywords will be applied to all keybindings.
+   (:norepeat t)
+   ("0" "M-0")
+   ("1" "M-1")
+   ("2" "M-2")
+   ("3" "M-3")
+   ("4" "M-4")
+   ("5" "M-5")
+   ("6" "M-6")
+   ("7" "M-7")
+   ("8" "M-8")
+   ("9" "M-9")))
+
