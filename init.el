@@ -421,56 +421,6 @@
   :config
   (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
 
-;; MODAL EDITIONS
-;; configure the boon mode and use the qwert keybinds
-;; (use-package boon
-;;   :config
-;;   (boon-mode 1))
-;; ;; TODO: move these configures to here and annotated better (Org)
-;; (require 'boon-qwerty)
-;; (define-key boon-moves-map "i"  'previous-line)
-;; (define-key boon-moves-map "o"  'next-line)
-
-;; (use-package god-mode
-;;   :ensure t
-;;   :config
-;;   (global-set-key (kbd "<escape>") #'god-mode-all)
-;;   (which-key-enable-god-mode-support)) ;; Alternar God Mode com ESC
-;; ;; god mode: x, f, b, p, n, e, a, d, g
-;; ;; C-x C-c M-g M-s C-h C-M M-o
-
-;; (defun my-god-mode-update-cursor ()
-;;   "Muda a cor e o tipo do cursor quando o God Mode é ativado ou desativado."
-;;   (if god-local-mode
-;;       ;; when the god mode is activated
-;;       (progn
-;;         (setq cursor-type 'hollow)
-;;         (set-cursor-color "deep sky blue"))
-;;     ;; when the god mode is not activate
-;;     (progn
-;;       (setq cursor-type 'box)
-;;       (set-cursor-color my-cursor-default-color))))
-;; (add-hook 'post-command-hook #'my-god-mode-update-cursor)
-
-;;(use-package modalka
- ;; :config
-;;  (modalka-mode 1)
-  ;; Defina seus próprios atalhos aqui
-  ;;(define-key modalka-mode-map (kbd "x") (kbd "C-x"))
- ;; (define-key modalka-mode-map (kbd "C-c C-k") 'kill-line)
-  ;; (define-key modalka-mode-map (kbd "C-c C-y") 'yank)
-;; (modalka-define-kbd "a" "C-a")
-;; (modalka-define-kbd "b" "C-b")
-;; (modalka-define-kbd "e" "C-e")
-;; (modalka-define-kbd "f" "C-f")
-;; (modalka-define-kbd "g" "C-g")
-;; (modalka-define-kbd "n" "C-n")
-;; (modalka-define-kbd "p" "C-p")
-  ;; (modalka-define-kbd "w" "C-w")
-  ;; (modalka-define-kbd "y" "C-y")
-  ;;:bind
-  ;;(("<return>" . modalka-mode)
- ;; ))
 
 
 ;; HYDRAS!
@@ -519,7 +469,7 @@
 "
   ("l" scroll-left)
   ("j" scroll-right)
-  ;; configure like this to allow pass number of lines to scroll
+  ;; option: simple scroll with static point
   ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
   ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
   ("i" my-pulsar-scroll-page-up-multi)
@@ -553,7 +503,6 @@
   ("q" nil "quit"))
 (global-set-key (kbd "C-c w") 'hydra-window-nav/body)
 
-
 (defhydra hydra-avy-nav (:color blue)
   "Avy movements"
   ("a" avy-goto-char "goto char")
@@ -563,10 +512,45 @@
   ("q" nil "quit"))
 (global-set-key (kbd "M-g M-a") 'hydra-avy-nav/body)
 
-;; TODO: add hydra here to move window (scroll up/down left/right)
-;; in this put scroll to jump pages or x rows (scroll with the cursor centralized)
+(defhydra hydra-consult-goto (:hint nil :color blue)
+   "
+  Goto Navigation:
+  [_l_] goto line        [_s_] search term        [_S_] multi search
+  [_i_] imenu            [_I_] multi imenu        [_o_] outline
+  [_m_] mark             [_M_] global mark        [_B_] bookmark
+  [_q_] quit
+  "
+  ("l" consult-goto-line)
+  ("s" consult-line)  ;; search regex term
+  ("S" consult-line-multi)
+  ("i" consult-imenu)
+  ("I" consult-imenu-multi)
+  ("o" consult-outline)  ;; travel headers
+  ("m" consult-mark)
+  ("M" consult-global-mark)
+  ("B" consult-bookmark)
+  ("q" nil))
+(global-set-key (kbd "C-c g") 'hydra-consult-goto/body)
 
-;; TODO: criar outras hydras para outros movimentos com consult, e
+
+  ;; TODO: move to another hydra for file
+  ;; ("f" consult-find) ;; find file
+  ;; ("F" consult-fd)
+  ;; ("r" consult-recent-file)
+  ;; ("p" consult-project-buffer)
+  ;; ("r" consult-ripgrep)
+  ;;("b" consult-buffer)
+  ;;("B" consult-bookmark)
+
+  ;; TODO: create another hydra for these (maybe)
+  ;;("a" consult-org-agenda)
+  ;;("h" consult-org-heading)
+  ;;("e" consult-compile-error)
+  ;;("c" consult-mode-command)
+  ;;("x" consult-history)
+
+
+;; TODO: criar outras hydras para outros movimentos com consult
 ;; moves with consult
 ;; search/replace
 ;; identation
@@ -576,7 +560,8 @@
 ;; move line or region to line X or above/below line
 
 
-;; TODO change the cursor and normal mode is active
+;; MODAL EDITIONS
+;; TODO change the cursor when normal mode is active to something different (white? hollow?)
 ;; TODO: change to be active in all open buffers
 (use-package ryo-modal
   :commands ryo-modal-mode
@@ -607,17 +592,21 @@
    ("}" sp-end-of-next-sexp)
 
    ;; TODO: still available keywords
-   ;; Q W eE rR tT Y pP \|
+   ;; Q W E rR tT Y pP \|
    ;; A S fF gG ;: '"
-   ;; xX cC vV bB nN M ,< .> /?
+   ;; xX cC V B nN M ,< .> /?
    
    ;; base command section
    ("ESC" keyboard-quit)
+   ;; TODO: this is a convinience keybind for now
+   ;;        think if I could remove it later
+   ("e" eval-buffer)
    ("s" save-buffer)
    ("a" hydra-avy-nav/body)
    ("w" hydra-window-nav/body)
-   ;; TODO: add goto hydra here
+   ("g" hydra-consult-goto/body)
    ("v" hydra-window-scroll/body)
+   ("b" pulsar-pulse-line)
    (";" comment-line)
    ;; undo/redo commands
    ("z" undo)
@@ -632,9 +621,10 @@
    ("d" kill-region) ;; cut region
    ("D" kill-whole-line) ;; cut line
    ("y" yank) ;; paste
+   ("Y" consult-yank-replace)
    )
   ;; CONCEPT: capitilized words work like "advanced mode" triggering hydras:
-  ;; example D enter "advanced deletion mode" to delete, word, line, paragraph, buffer, etc.
+  ;; example D enter "advanced deletion mode" to delceten, word, line, paragraph, buffer, etc.
   ;; M enters "advanced mark (region) mode" to mark with regex, miltucursor etc...
   ;; TODO: add entry here for the search/replace f/r
   
