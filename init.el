@@ -115,6 +115,7 @@
                                   dashboard-insert-newline
                                   dashboard-insert-banner-title
                                   dashboard-insert-newline
+                                  ;; for now not use the navigator widget
                                   ;;dashboard-insert-navigator
                                   ;;dashboard-insert-newline
                                   dashboard-insert-items
@@ -157,7 +158,7 @@
 (use-package avy
   :straight t
   :bind (("M-g a" . avy-goto-char)
-         ("M-g l" . avy-goto-line)
+         ("M-g r" . avy-goto-line) ;; row
          ("M-g w" . avy-goto-word-1)
          ("M-g t" . avy-goto-char-timer))
   :config
@@ -174,11 +175,7 @@
   :custom
   (avy-timeout-seconds 1.0))
 
-;; TODO: DEPRACATED remove because is already using a hydra for windmove(ments)
-;; fast movement ace-window
-;; (use-package ace-window
-;;   :bind ("M-g o" . ace-window))
-
+;; navigate easily through links
 (use-package ace-link
   :config
   (ace-link-setup-default))
@@ -239,20 +236,14 @@
 
 
 ;; BETTER ADIVISOR SYSTEMS
-;; confugure the helpful package
+;; configure the helpful package
 (use-package helpful
   :bind
-  (("C-h f" . helpful-callable)   ;; Ajuda detalhada sobre funções
-   ("C-h v" . helpful-variable)   ;; Ajuda detalhada sobre variáveis
-   ("C-h k" . helpful-key)        ;; Ajuda detalhada sobre teclas
-   ("C-h x" . helpful-command)    ;; Ajuda sobre comandos interativos
-   ("C-c C-d" . helpful-at-point)) ;; Ajuda do que está sob o cursor
-  :config
-  ;; Faz os comandos `describe-*` padrões chamarem o Helpful
-  (setq apropos-do-all t)
-  (advice-add 'describe-function :override #'helpful-callable)
-  (advice-add 'describe-variable :override #'helpful-variable)
-  (advice-add 'describe-key :override #'helpful-key))
+  (("C-h f" . helpful-callable)
+   ("C-h v" . helpful-variable)
+   ("C-h k" . helpful-key)
+   ("C-h x" . helpful-command)
+   ("C-c C-d" . helpful-at-point)))
 
 ;; configure the which key
 (use-package which-key
@@ -288,32 +279,24 @@
 ;; TODO: configure proper the keybindings for consult
 ;; consult
 (use-package consult
-  :bind (("M-y" . consult-yank-pop)          ;; Histórico de copiar/colar (kill-ring)
-         ("M-g -" . consult-goto-line))       ;; Ir para uma linha específica
-         ;;("M-g i" . consult-imenu)           ;; Navegar por seções do código
-         ;;("M-g o" . consult-outline))         ;; Outline para documentos estruturados
-         ;;("M-s r" . consult-ripgrep)         ;; Busca por palavras no projeto (ripgrep)
-         ;;("M-s l" . consult-line-multi)      ;; Busca em múltiplos buffers
-         ;;("M-s g" . consult-git-grep)        ;; Busca dentro do repositório Git
-         ;;("M-s d" . consult-find)            ;; Encontrar arquivos dentro de diretórios
-         ;;("M-s m" . consult-mark)            ;; Navegar entre marcas no buffer
-         ;;("M-s k" . consult-kmacro))         ;; Busca em macros gravadas
+  :bind (("M-y" . consult-yank-pop)
+         ("M-g -" . consult-goto-line))
   :init
-  (setq consult-preview-key 'any)           ;; Mostra preview de opções ao navegar
-  (setq consult-narrow-key "<"))            ;; Permite filtrar por categoria rapidamente
+  (setq consult-preview-key 'any)
+  (setq consult-narrow-key "<"))
 
 (use-package embark
   :bind
-  (("C-." . embark-act)         ;; Aciona o Embark no contexto atual
-   ("C-;" . embark-dwim)        ;; Tenta a ação mais lógica
-   ("C-h B" . embark-bindings)) ;; Mostra keybindings ativos no contexto
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings)) ;; show active keybindings in current context
   :init
-  (setq prefix-help-command #'embark-prefix-help-command))  ;; Usa embark no C-h
+  (setq prefix-help-command #'embark-prefix-help-command))  ;; use embark in C-h
 
 (use-package embark-consult
   :after (embark consult)
   :hook
-  (embark-collect-mode . consult-preview-at-point-mode))  ;; Preview ao selecionar no embark
+  (embark-collect-mode . consult-preview-at-point-mode))
 
 (use-package corfu
   :init
@@ -326,7 +309,7 @@
 
 (use-package cape
   :init
-  (global-set-key (kbd "TAB") #'completion-at-point)
+  (global-set-key (kbd "C-SPC") #'completion-at-point)
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-keyword)
@@ -503,14 +486,15 @@
   ("q" nil "quit"))
 (global-set-key (kbd "C-c w") 'hydra-window-nav/body)
 
-(defhydra hydra-avy-nav (:color blue)
-  "Avy movements"
+(defhydra hydra-ace-jump (:color blue)
+  "Ace jump movements"
   ("a" avy-goto-char "goto char")
   ("w" avy-goto-word-1 "goto word")
-  ("l" avy-goto-line "goto line")
+  ("r" avy-goto-line "- goto row")
   ("t" avy-goto-char-timer "⏱ goto timer")
+  ("l" ace-link "@ goto link")
   ("q" nil "quit"))
-(global-set-key (kbd "M-g M-a") 'hydra-avy-nav/body)
+(global-set-key (kbd "M-g M-a") 'hydra-ace-jump/body)
 
 (defhydra hydra-consult-goto (:hint nil :color blue)
    "
@@ -550,8 +534,7 @@
   ;;("x" consult-history)
 
 
-;; TODO: criar outras hydras para outros movimentos com consult
-;; moves with consult
+;; TODO: create hydras for these functions
 ;; search/replace
 ;; identation
 ;; folding
@@ -567,6 +550,13 @@
   :commands ryo-modal-mode
   :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to a better keybiind (maybe ESC)
   :config
+  (setq ryo-modal-cursor-color "peach puff")
+  (setq ryo-modal-cursor-type 'box)
+  (defun my-show-ryo-keymap ()
+    "Show the current ryo-modal-mode keybindings in a which-key popup."
+    (interactive)
+    (which-key-show-keymap 'ryo-modal-mode-map))
+  
   (ryo-modal-keys
    ("," ryo-modal-repeat)
    ("q" ryo-modal-mode)
@@ -602,30 +592,29 @@
    ;;        think if I could remove it later
    ("e" eval-buffer)
    ("s" save-buffer)
-   ("a" hydra-avy-nav/body)
+   ("a" hydra-ace-jump/body)
    ("w" hydra-window-nav/body)
    ("g" hydra-consult-goto/body)
    ("v" hydra-window-scroll/body)
-   ("b" pulsar-pulse-line)
+   ("b" pulsar-pulse-line) ;; blink
    (";" comment-line)
+   ("?" my-show-ryo-keymap)
    ;; undo/redo commands
    ("z" undo)
    ("Z" undo-redo)
    ;; start a selection (region)
    ("m" set-mark-command)
    ;; TODO: add M to call hydra to advanced selection "submode"
-   ;; (e.g. select current line, backward, forward, etc)
+   ;; (e.g. select current line, backward, forward, multicursor, regex, etc)
    ;; basic copy/cut/paste commands (kill/yank)
    ("h" kill-ring-save) ;; copy
    ;; TODO: add H for advanced the kill (hydra) advanced mode
+   ;;  e.g. word, line paragraph, buffer, etc.
    ("d" kill-region) ;; cut region
    ("D" kill-whole-line) ;; cut line
    ("y" yank) ;; paste
-   ("Y" consult-yank-replace)
-   )
-  ;; CONCEPT: capitilized words work like "advanced mode" triggering hydras:
-  ;; example D enter "advanced deletion mode" to delceten, word, line, paragraph, buffer, etc.
-  ;; M enters "advanced mark (region) mode" to mark with regex, miltucursor etc...
+   ("Y" consult-yank-replace))
+  
   ;; TODO: add entry here for the search/replace f/r
   
   (ryo-modal-keys
