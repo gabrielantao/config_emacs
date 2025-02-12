@@ -331,17 +331,15 @@
 
 ;; projectile
 (use-package projectile
-  :init
-  (projectile-mode +1)
- ;; :bind (("C-c p f" . projectile-find-file)
- ;;        ("C-c p p" . projectile-switch-project)
- ;;        ("C-c p g" . projectile-grep)
- ;;        ("C-c p s" . projectile-ripgrep))
   :config
-  ;;(setq projectile-project-search-path '("~/projects/" "~/code/"))
+  (projectile-mode 1)
+  (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
 (setq projectile-generic-command "rg --files --hidden")
 
+;; use consult to help projectile experience
+(use-package consult-projectile
+  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
 
 ;; IDE features
 (use-package lsp-mode
@@ -544,6 +542,11 @@
 
 
 ;; MODAL EDITIONS
+;;(use-package general)
+;;  :config
+;;  (general-auto-unbind-keys) ;; Remove old keybindings
+
+
 ;; TODO change the cursor when normal mode is active to something different (white? hollow?)
 ;; TODO: change to be active in all open buffers
 (use-package ryo-modal
@@ -583,7 +586,7 @@
 
    ;; TODO: still available keywords
    ;; Q W E rR tT Y pP \|
-   ;; A S fF gG ;: '"
+   ;; A S Ff G  '"
    ;; xX cC V B nN M ,< .> /?
    
    ;; base command section
@@ -592,13 +595,19 @@
    ;;        think if I could remove it later
    ("e" eval-buffer)
    ("s" save-buffer)
-   ("a" hydra-ace-jump/body)
+   ;; TODO: add entry here for the search/replace [r]
+   ;; TODO: think if these `goto` hydras could be better implemented as general group
+   ("g" hydra-ace-jump/body)
+   ("G" hydra-consult-goto/body)
    ("w" hydra-window-nav/body)
-   ("g" hydra-consult-goto/body)
    ("v" hydra-window-scroll/body)
    ("b" pulsar-pulse-line) ;; blink
    (";" comment-line)
-   ("?" my-show-ryo-keymap)
+   ;; excecute commands
+   ("x" execute-extended-command)
+   ("a" embark-act)
+   (":" embark-bindings)
+   ("t" projectile-command-map)
    ;; undo/redo commands
    ("z" undo)
    ("Z" undo-redo)
@@ -615,7 +624,6 @@
    ("y" yank) ;; paste
    ("Y" consult-yank-replace))
   
-  ;; TODO: add entry here for the search/replace f/r
   
   (ryo-modal-keys
    ;; First argument to ryo-modal-keys may be a list of keywords.
