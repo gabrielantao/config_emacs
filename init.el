@@ -411,33 +411,34 @@
 
 ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
 ;; TODO: review if need these lambda interactive here
-(defhydra hydra-sp-move (:exit nil)
-  "Navegate with smartparens"
-  ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
-  ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
-  ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
-  ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
-  ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
-  ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
-  ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
-  ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
-  ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
-  ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
-  ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
-  ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
-  ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
-  ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
-  ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
-  ("q" nil "quit" :exit t :color blue))
-(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+;; (defhydra hydra-sp-move (:exit nil)
+;;   "Navegate with smartparens"
+;;   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
+;;   ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
+;;   ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
+;;   ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
+;;   ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
+;;   ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
+;;   ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
+;;   ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
+;;   ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
+;;   ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
+;;   ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
+;;   ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
+;;   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
+;;   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
+;;   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
+;;   ("q" nil "quit" :exit t :color blue))
+;; ;;(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
 
 
-(defhydra hydra-text-scale (:color pink :timeout 4)
+(defhydra hydra-text-zoom (:color pink :timeout 4)
   "Scale text font"
   ("i" text-scale-increase "in")
   ("k" text-scale-decrease "out")
   ("q" nil "quit" :color blue))
-(global-set-key (kbd "C-c a") 'hydra-text-scale/body)
+;;(global-set-key (kbd "C-c a") 'hydra-text-zoom/body)
+
 
 (defhydra hydra-window-scroll (:hint nil :color red)
   "
@@ -459,10 +460,10 @@
   ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
   ("c" pulsar-recenter-middle)
   ("q" nil))
-(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
+;;(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
 
 
-(defhydra hydra-window-nav (:color pink :columns 4)
+(defhydra hydra-window-move (:color pink :columns 4)
   "Window navigation and manipulation"
   ("j" windmove-left "← left")
   ("l" windmove-right "→ right")
@@ -476,55 +477,19 @@
   ("g" shrink-window-horizontally "→|← shrink horizontally")
   ("y" enlarge-window "←|→ enlarge vertically")
   ("h" shrink-window "→|← shrink vertically")
-  ("a" split-window-vertically "|| split vertically")
-  ("s" split-window-horizontally "== split horizontally")
+  ("a" split-window-vertically "== split in rows")
+  ("s" split-window-horizontally "|| split in columns")
   ("d" delete-window "delete window")
   ("D" delete-other-windows "delete other windows")
   ("o" other-window "other window")
   ("q" nil "quit"))
-(global-set-key (kbd "C-c w") 'hydra-window-nav/body)
-
-(defhydra hydra-ace-jump (:color blue)
-  "Ace jump movements"
-  ("a" avy-goto-char "goto char")
-  ("w" avy-goto-word-1 "goto word")
-  ("r" avy-goto-line "- goto row")
-  ("t" avy-goto-char-timer "⏱ goto timer")
-  ("l" ace-link "@ goto link")
-  ("q" nil "quit"))
-(global-set-key (kbd "M-g M-a") 'hydra-ace-jump/body)
-
-(defhydra hydra-consult-goto (:hint nil :color blue)
-   "
-  Goto Navigation:
-  [_l_] goto line        [_s_] search term        [_S_] multi search
-  [_i_] imenu            [_I_] multi imenu        [_o_] outline
-  [_m_] mark             [_M_] global mark        [_B_] bookmark
-  [_q_] quit
-  "
-  ("l" consult-goto-line)
-  ("s" consult-line)  ;; search regex term
-  ("S" consult-line-multi)
-  ("i" consult-imenu)
-  ("I" consult-imenu-multi)
-  ("o" consult-outline)  ;; travel headers
-  ("m" consult-mark)
-  ("M" consult-global-mark)
-  ("B" consult-bookmark)
-  ("q" nil))
-(global-set-key (kbd "C-c g") 'hydra-consult-goto/body)
+;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
 
 
-  ;; TODO: move to another hydra for file
-  ;; ("f" consult-find) ;; find file
-  ;; ("F" consult-fd)
-  ;; ("r" consult-recent-file)
-  ;; ("p" consult-project-buffer)
-  ;; ("r" consult-ripgrep)
-  ;;("b" consult-buffer)
-  ;;("B" consult-bookmark)
+;; MODAL EDITIONS
+(use-package general)
 
-  ;; TODO: create another hydra for these (maybe)
+  ;; TODO: create another general group for these (maybe)
   ;;("a" consult-org-agenda)
   ;;("h" consult-org-heading)
   ;;("e" consult-compile-error)
@@ -541,14 +506,84 @@
 ;; move line or region to line X or above/below line
 
 
-;; MODAL EDITIONS
-;;(use-package general)
-;;  :config
-;;  (general-auto-unbind-keys) ;; Remove old keybindings
+(general-create-definer my/leader-key
+  :keymaps 'override ;; Garante que o atalho funcione globalmente
+  :prefix "\\" ;; Defina a leader key como a contra barra
+  :global-prefix "C-\\") ;; Alternativa para teclados sem tecla "SPC"
+(my/leader-key
+  ;; commands to execute
+  "x" '(:ignore t :which-key "execute")
+  "xx" 'execute-extended-command
+  "xa" 'embark-act
+  "xb" 'embark-bindings
+  "xe" 'eval-buffer
+  "xR" 'restart-emacs
+  
+  ;; goto group of comamands
+  "g" '(:ignore t :which-key "goto")
+  ;; first ace jump movements
+  "gc" 'avy-goto-char
+  "gw" 'avy-goto-word-1
+  "gl" 'avy-goto-line
+  "gt" 'avy-goto-char-timer
+  "gk" 'ace-link
+  ;; then bigger jumps
+  "gr" 'consult-goto-line
+  "gf" 'consult-line
+  "gF" 'consult-line-multi
+  "gi" 'consult-imenu
+  "gI" 'consult-imenu-multi
+  "go" 'consult-outline
+  "gm" 'consult-mark
+  "gM" 'consult-global-mark
+  "gB" 'consult-bookmark
+
+  ;; windows configs
+  "w" '(:ignore t :which-key "window")
+  "wm" 'hydra-window-move/body
+  "wz" 'hydra-text-zoom/body
+  "ws" 'hydra-window-scroll/body
+
+  ;; deal with files
+  "f" '(:ignore t :which-key "files")
+  ;; TODO: create, open, delete, etc.
+  "fs" 'find-file
+  "ff" 'consult-find ;; find file
+  "fF" 'consult-fd
+  "fr" 'consult-recent-file
+
+  ;; deal with buffer
+  "b" '(:ignore t :which-key "buffers")
+  "bs" 'save-buffer
+  "bb" 'switch-to-buffer
+  "bB" 'consult-buffer
+  "bp" 'consult-project-buffer
+  "bk" 'kill-buffer
+
+  ;; base text operations
+  "-" 'pulsar-pulse-line
+  ";" 'comment-line
+  "z" 'undo
+  "Z" 'undo-redo
+  "y" 'yank ;; paste
+  "Y" 'consult-yank-replace ;; consult available paste list
+
+  ;; TODO: filter only most used projectile commands to be used under p prefix
+  "p" 'projectile-command-map
+  
+  ;; TODO: put the flycheck commands here
+  ;; TODO: put the magit commands here
+  ;; TODO: put the dired commands here
+  
+  ;; TODO: put this ripg grep together with project utils
+  ;; or search/replace commands
+  ;; ("fr" consult-ripgrep)
+  )
 
 
-;; TODO change the cursor when normal mode is active to something different (white? hollow?)
-;; TODO: change to be active in all open buffers
+;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)
+;; check for functionalities in evil, vim, spacemacs (visual mode), and meow helix/kakoune
+;; to do rich selections
 (use-package ryo-modal
   :commands ryo-modal-mode
   :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to a better keybiind (maybe ESC)
@@ -585,29 +620,13 @@
    ("}" sp-end-of-next-sexp)
 
    ;; TODO: still available keywords
-   ;; Q W E rR tT Y pP \|
-   ;; A S Ff G  '"
-   ;; xX cC V B nN M ,< .> /?
+   ;; Q wW eE rR tT pP |
+   ;; aA sS Ff gG H :; '"
+   ;; xX cC vV bB nN M ,< .> /?
    
    ;; base command section
    ("ESC" keyboard-quit)
-   ;; TODO: this is a convinience keybind for now
-   ;;        think if I could remove it later
-   ("e" eval-buffer)
-   ("s" save-buffer)
-   ;; TODO: add entry here for the search/replace [r]
-   ;; TODO: think if these `goto` hydras could be better implemented as general group
-   ("g" hydra-ace-jump/body)
-   ("G" hydra-consult-goto/body)
-   ("w" hydra-window-nav/body)
-   ("v" hydra-window-scroll/body)
    ("b" pulsar-pulse-line) ;; blink
-   (";" comment-line)
-   ;; excecute commands
-   ("x" execute-extended-command)
-   ("a" embark-act)
-   (":" embark-bindings)
-   ("t" projectile-command-map)
    ;; undo/redo commands
    ("z" undo)
    ("Z" undo-redo)
@@ -623,7 +642,6 @@
    ("D" kill-whole-line) ;; cut line
    ("y" yank) ;; paste
    ("Y" consult-yank-replace))
-  
   
   (ryo-modal-keys
    ;; First argument to ryo-modal-keys may be a list of keywords.
