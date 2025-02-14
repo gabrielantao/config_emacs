@@ -55,6 +55,8 @@
 (global-auto-revert-mode 1)
 ;;(setq echo-keystrokes 0.5)
 
+;; allow to delete the current selected region
+(delete-selection-mode 1)
 
 ;; define the straight.el
 (defvar bootstrap-version)
@@ -234,6 +236,54 @@
     (when (> num-lines 1)
       (pulsar-pulse-line))))
 
+;; IMPROVE THE SEARCH/REPLACE SYSTEM
+(use-package deadgrep
+  :bind ("C-c s" . deadgrep))
+
+(use-package wgrep
+  :after deadgrep
+  :config
+  (setq wgrep-auto-save-buffer t))
+
+(use-package wgrep-deadgrep
+  :after deadgrep)
+
+
+
+;; TODO: try the visual-regexp as options to anzu...
+;; (use-package visual-regexp
+;;   :bind (("C-c r" . vr/replace)
+;;          ("C-c q" . vr/query-replace)))
+
+;; (use-package visual-regexp-steroids
+;;   :after visual-regexp
+;;   :config
+;;   (setq vr/engine 'python))
+
+(use-package anzu
+  :straight t
+  :init
+  (global-anzu-mode 1)
+  :config
+  (setq anzu-mode-lighter "")
+  (setq anzu-deactivate-region t)
+  (setq anzu-replace-to-string-separator " =>")
+  ;; (global-set-key [remap query-replace] 'anzu-query-replace)
+  ;; (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp))
+)
+
+(defun my/anzu-replace-in-buffer ()
+  "Move para o topo do buffer antes de substituir com anzu."
+  (interactive)
+  (goto-char (point-min))
+  (call-interactively 'anzu-query-replace))
+
+
+(defun my/anzu-replace-regexp-in-buffer ()
+  "Move para o topo do buffer antes de substituir com anzu."
+  (interactive)
+  (goto-char (point-min))
+  (call-interactively 'anzu-query-replace-regexp))
 
 ;; BETTER ADIVISOR SYSTEMS
 ;; configure the helpful package
@@ -323,12 +373,7 @@
   (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 
-;; PROJECTE MANAGEMENT
-;; ripgrep
-(use-package rg
-  :config
-  (rg-enable-default-bindings))
-
+;; PROJECTE MANAGEMENT AND LANGUAGE SERVER
 ;; projectile
 (use-package projectile
   :config
@@ -522,34 +567,46 @@
   ;; goto group of comamands
   "g" '(:ignore t :which-key "goto")
   ;; first ace jump movements
-  "gc" 'avy-goto-char
-  "gw" 'avy-goto-word-1
-  "gl" 'avy-goto-line
-  "gt" 'avy-goto-char-timer
-  "gk" 'ace-link
+  "g c" 'avy-goto-char
+  "g w" 'avy-goto-word-1
+  "g l" 'avy-goto-line
+  "g t" 'avy-goto-char-timer
+  "g k" 'ace-link
   ;; then bigger jumps
-  "gr" 'consult-goto-line
-  "gf" 'consult-line
-  "gF" 'consult-line-multi
-  "gi" 'consult-imenu
-  "gI" 'consult-imenu-multi
-  "go" 'consult-outline
-  "gm" 'consult-mark
-  "gM" 'consult-global-mark
-  "gB" 'consult-bookmark
+  "g r" 'consult-goto-line
+  "g f" 'consult-line
+  "g F" 'consult-line-multi
+  "g i" 'consult-imenu
+  "g I" 'consult-imenu-multi
+  "g o" 'consult-outline
+  "g m" 'consult-mark
+  "g M" 'consult-global-mark
+  "g B" 'consult-bookmark
 
+  ;; search and replace
+  "s" '(:ignore t :which-key "search/replace")
+  "s g" 'consult-ripgrep
+  "s d" 'deadgrep
+  "s r" 'anzu-query-replace
+  "s R" 'anzu-query-replace-regexp
+  "s b" 'my/anzu-replace-in-buffer
+  "s B" 'my/anzu-replace-in-buffer-regexp
+  
   ;; windows configs
   "w" '(:ignore t :which-key "window")
-  "wm" 'hydra-window-move/body
-  "wz" 'hydra-text-zoom/body
-  "ws" 'hydra-window-scroll/body
+  "w m" 'hydra-window-move/body
+  "w z" 'hydra-text-zoom/body
+  "w s" 'hydra-window-scroll/body
+  "w o" 'other-window
+  "w d" 'delete-window
+  "w D" 'delete-other-windows
 
   ;; deal with files
   "f" '(:ignore t :which-key "files")
   ;; TODO: create, open, delete, etc.
   "fs" 'find-file
-  "ff" 'consult-find ;; find file
-  "fF" 'consult-fd
+  "ff" 'consult-fd ;; find file
+  "fF" 'consult-find
   "fr" 'consult-recent-file
 
   ;; deal with buffer
@@ -567,7 +624,8 @@
   "Z" 'undo-redo
   "y" 'yank ;; paste
   "Y" 'consult-yank-replace ;; consult available paste list
-
+  ;; TODO: add entry for the visual mode
+  
   ;; TODO: filter only most used projectile commands to be used under p prefix
   "p" 'projectile-command-map
   
@@ -575,9 +633,6 @@
   ;; TODO: put the magit commands here
   ;; TODO: put the dired commands here
   
-  ;; TODO: put this ripg grep together with project utils
-  ;; or search/replace commands
-  ;; ("fr" consult-ripgrep)
   )
 
 
@@ -626,7 +681,7 @@
    
    ;; base command section
    ("ESC" keyboard-quit)
-   ("b" pulsar-pulse-line) ;; blink
+   ("-" pulsar-pulse-line)
    ;; undo/redo commands
    ("z" undo)
    ("Z" undo-redo)
