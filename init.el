@@ -4,9 +4,13 @@
 
 ;; show the positions and line highlith
 (setq column-number-mode t)
-(global-display-line-numbers-mode t)
+(add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
 (global-hl-line-mode 0)
 (setq left-fringe-width 10)
+(setq window-divider-default-bottom-width 4)
+(setq window-divider-default-right-width 4)
+(window-divider-mode 1)
 
 ;; TODO: check because this function has problem whem jump to total number of digits
 ;; e.g. when the buffer goes to 100 to 99 (erase one line) or the oposite.
@@ -27,7 +31,6 @@
 (setq ring-bell-function 'ignore)
 ;;(setq inhibit-startup-message t)
 ;;(setq initial-scratch-message "")
-
 
 ;; Use "y or n" instead of "yes or no"
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -95,6 +98,21 @@
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 100)
 (setq-default line-spacing 0.3)
 
+;; configure better identation bars
+;; TODO: configure this package
+;; (use-package indent-bars
+;;   :config
+;;   (setq
+;;    indent-bars-color '(highlight :face-bg t :blend 0.2)
+;;    indent-bars-pattern "."
+;;    indent-bars-width-frac 0.1
+;;    indent-bars-pad-frac 0.1
+;;    indent-bars-zigzag nil
+;;    indent-bars-color-by-depth nil
+;;    indent-bars-highlight-current-depth nil
+;;    indent-bars-display-on-blank-lines nil))
+
+
 ;; improve the start dashboard
 (use-package dashboard
   :config
@@ -154,6 +172,13 @@
      ((t (:foreground "#f8f8f2" :background "#44475a" :weight bold))))
    '(sp-show-pair-mismatch-face
      ((t (:foreground "#faafff" :background "#ff0000" :weight bold))))))
+
+(use-package
+  multiple-cursors
+  :bind (("C-S-c C-S-c" . 'mc/edit-lines)
+         ("C->" . 'mc/mark-next-like-this)
+         ("C-<" . 'mc/mark-previous-like-this)
+         ("C-c C-<" . 'mc/mark-all-like-this)))
 
 ;; IMPROVED NAVIGATION EXPERIENCE
 ;; configure the to jump with avy
@@ -237,28 +262,34 @@
       (pulsar-pulse-line))))
 
 ;; IMPROVE THE SEARCH/REPLACE SYSTEM
+;; (use-package rg
+;;   :ensure t
+;;   :bind (("C-c r" . rg-run)))
+;; (rg-enable-default-bindings)
+
+;; ;; vanubi
 (use-package deadgrep
-  :bind ("C-c s" . deadgrep))
+    :bind (:map deadgrep-mode-map
+              ("l" . deadgrep-forward-match)
+              ("j" . deadgrep-backward-match)
+              ("k" . deadgrep-forward-filename)
+              ("i" . deadgrep-backward-filename)
+              ("r" . deadgrep-restart)
+              ("s" . deadgrep-kill-process)
+              ;; deactivate the original keybindings
+              ("p" . nil) ;; previous
+              ("n" . nil) ;; next
+              ("g" . nil))) ;; restart
+;;outro vanubi
 
 (use-package wgrep
   :after deadgrep
   :config
-  (setq wgrep-auto-save-buffer t))
+  (setq wgrep-auto-save-buffer t)
+  (setq wgrep-enable-key "e"))
 
 (use-package wgrep-deadgrep
   :after deadgrep)
-
-
-
-;; TODO: try the visual-regexp as options to anzu...
-;; (use-package visual-regexp
-;;   :bind (("C-c r" . vr/replace)
-;;          ("C-c q" . vr/query-replace)))
-
-;; (use-package visual-regexp-steroids
-;;   :after visual-regexp
-;;   :config
-;;   (setq vr/engine 'python))
 
 (use-package anzu
   :straight t
@@ -267,10 +298,7 @@
   :config
   (setq anzu-mode-lighter "")
   (setq anzu-deactivate-region t)
-  (setq anzu-replace-to-string-separator " =>")
-  ;; (global-set-key [remap query-replace] 'anzu-query-replace)
-  ;; (global-set-key [remap query-replace-regexp] 'anzu-query-replace-regexp))
-)
+  (setq anzu-replace-to-string-separator " ~▶"))
 
 (defun my/anzu-replace-in-buffer ()
   "Move para o topo do buffer antes de substituir com anzu."
@@ -326,11 +354,8 @@
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
-;; TODO: configure proper the keybindings for consult
 ;; consult
 (use-package consult
-  :bind (("M-y" . consult-yank-pop)
-         ("M-g -" . consult-goto-line))
   :init
   (setq consult-preview-key 'any)
   (setq consult-narrow-key "<"))
@@ -348,33 +373,9 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-(use-package corfu
-  :init
-  (global-corfu-mode 1))
 
-(use-package nerd-icons-corfu
-  :after corfu
-  :config
-  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
-
-(use-package cape
-  :init
-  (global-set-key (kbd "C-SPC") #'completion-at-point)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  (add-to-list 'completion-at-point-functions #'cape-symbol)
-  (add-to-list 'completion-at-point-functions #'lsp-completion-at-point))
-
-(use-package nerd-icons-completion
-  :after marginalia
-  :config
-  (nerd-icons-completion-mode)
-  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
-
-
-;; PROJECTE MANAGEMENT AND LANGUAGE SERVER
-;; projectile
+;; IDE FEATURES CONFIGURED HERE...
+;; project management
 (use-package projectile
   :config
   (projectile-mode 1)
@@ -386,49 +387,123 @@
 (use-package consult-projectile
   :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
 
-;; IDE features
+;; completitions for the code and text
+(use-package corfu
+  :init
+  (global-corfu-mode 1)
+  :custom
+  (corfu-auto t)
+  (corfu-cycle t)
+  (corfu-quit-at-boundary nil)
+  (corfu-preview-current t))
+
+(use-package nerd-icons-corfu
+  :after corfu
+  :config
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
+(use-package cape
+  :init
+  (global-set-key (kbd "C-SPC") #'completion-at-point)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+  (add-to-list 'completion-at-point-functions #'cape-abbrev)
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-keyword)
+  (add-to-list 'completion-at-point-functions #'cape-symbol)
+  (add-to-list 'completion-at-point-functions #'cape-dict)
+  ;; (add-to-list 'completion-at-point-functions #'cape-line)
+  ;; (add-hook 'completion-at-point-functions #'cape-history)
+  (add-to-list 'completion-at-point-functions #'lsp-completion-at-point))
+
+(use-package nerd-icons-completion
+  :after marginalia
+  :config
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+(use-package yasnippet
+  :config
+  (yas-global-mode 1)
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+  (setq yas-prompt-functions '(yas-completing-prompt)))
+
+(use-package flycheck
+  :init
+  (global-flycheck-mode)
+  :config
+  (setq flycheck-highlighting-mode 'symbols))
+
+
+(defun my/setup-lsp-mode ()
+  "Basic setup for the lsp-mode."
+  (lsp-enable-which-key-integration)
+  (flycheck-mode 1)
+  ;;(flyspell-prog-mode)
+  ;;(yas-minor-mode-on)
+  (lsp-diagnostics-mode 1)
+  (lsp-completion-mode 1))
+
 (use-package lsp-mode
   :init
   (setq lsp-keymap-prefix "C-c l")
   :commands (lsp lsp-deferred)
   :config
   (lsp-enable-which-key-integration t)
-  (setq lsp-diagnostics-provider :flycheck)
-  ;; ;; specific configuration for the LSPs used
-  ;; (with-eval-after-load 'pylsp
-  ;;   (add-hook 'lsp-pylsp-before-initialize-hook
-  ;;             (lambda ()
-  ;;               (setq lsp-pylsp-plugins
-  ;;                     '(( "pycodestyle" . t)  ;; activate the pycodestyle
-  ;;                       ( "pylint" . t)     ;; activate the pylint
-  ;;                       ;; TODO: add other plugins here...
-  ;;                       )))))
-  ;; (add-hook 'python-mode-hook #'lsp-deferred)
-  
-  ;; configure some keybindings
-  ;; (define-key lsp-mode-map (kbd "C-c l i") 'lsp-identifier-definition)
-  ;; (define-key lsp-mode-map (kbd "C-c l r") 'lsp-rename-symbol)
+  ;; (flycheck-mode 1)
+  ;; (flyspell-prog-mode)
+  ;; (yas-minor-mode-on)
+  ;; (lsp-diagnostics-mode 1)
+  ;; (lsp-completion-mode 1))
+  :custom
+  ;; (lsp-log-io nil)
+  ;; (lsp-print-performance nil)
+  ;; (lsp-report-if-no-buffer nil)
+  ;; (lsp-server-trace nil)
+  ;; (lsp-keep-workspace-alive nil)
+  (lsp-enable-snippet t)
+  ;; (lsp-auto-guess-root t)
+  ;; (lsp-restart 'iteractive)
+  ;; (lsp-auto-configure nil)
+  ;; (lsp-auto-execute-action nil)
+  ;; (lsp-eldoce-render-all nil)
+  (lsp-enable-completion-at-point t)
+  (lsp-enable-xref t)
+  (lsp-diagnostics-provider :flycheck)
+  ;; (lsp-enable-indentation t)
+  (lsp-enable-on-type-formatting nil)
+  (lsp-before-save-edits nil)
+  (lsp-enable-imenu t)
+  (lsp-imenu-show-container-name t)
+  (lsp-imenu-container-name-separator "//")
+  (lsp-imenu-sort-methods '(kind name))
+  (lsp-response-timeout 10)
+  (lsp-enable-file-watchers nil)
+  (lsp-headerline-breadcrumb-enable nil)
+  (lsp-semantic-highlighting t)
+  ;; (lsp-signature-auto-activate t)
+  ;; (lsp-signature-render-documentation nil)
+  (lsp-enable-text-document-color nil)
+  (lsp-completion-provider :capf)
+  (gc-cons-threshold 100000000)
+  (read-process-output-max (* 3 1024 1024)))
 
-  ;; CLOSING lsp-mode block here...
-  )
-
-;; pip install 'python-lsp-server[all]'
-;; OR use a docker image to run the server
+;; Python external dependencies (for LSP):
+;; - python-lsp-server (pip install 'python-lsp-server[all]')
+;; - python-debugpy
 (use-package python-mode
   :hook (python-mode . lsp-deferred))
-;; TODO: checkout this custom configs here...
-;;  :custom
-  ;; NOTE: Set these if Python 3 is called "python3" on your system!
-  ;; (python-shell-interpreter "python3")
-  ;; (dap-python-executable "python3")
-;;  (dap-python-debugger 'debugpy)
-;;  :config
-;;  (require 'dap-python))
+
+
+(use-package dap-mode
+  :after lsp-mode
+  :hook (python-mode . dap-mode)
+  :config
+  (require 'dap-python))
 
 
 ;; configure the lsp-docker in order to run the LSP servers inside the containers
 ;; and then do not need to install anything directly in my machine
-(use-package lsp-docker)
+;; (use-package lsp-docker)
 ;; (setq lsp-docker-client-configs
 ;;       '((:server-id pylsp-docker ;; ID do servidor no Docker
 ;;          :docker-image-id "emacslsp/lsp-docker-langservers" ;; Imagem Docker
@@ -438,15 +513,10 @@
 ;;  :client-packages lsp-docker-client-packages
 ;;  :client-configs lsp-docker-client-configs)
 
-(use-package flycheck
-  :init
-  (global-flycheck-mode))
-
 (use-package magit
   :bind (("C-x g" . magit-status))
   :config
   (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
-
 
 
 ;; HYDRAS!
@@ -527,6 +597,7 @@
   ("d" delete-window "delete window")
   ("D" delete-other-windows "delete other windows")
   ("o" other-window "other window")
+  ("c" pulsar-recenter-middle "center window")
   ("q" nil "quit"))
 ;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
 
@@ -543,11 +614,9 @@
 
 
 ;; TODO: create hydras for these functions
-;; search/replace
 ;; identation
 ;; folding
 ;; moving between symbols
-;; comment code
 ;; move line or region to line X or above/below line
 
 
@@ -558,11 +627,12 @@
 (my/leader-key
   ;; commands to execute
   "x" '(:ignore t :which-key "execute")
-  "xx" 'execute-extended-command
-  "xa" 'embark-act
-  "xb" 'embark-bindings
-  "xe" 'eval-buffer
-  "xR" 'restart-emacs
+  "x x" 'execute-extended-command
+  "x a" 'embark-act
+  "x b" 'embark-bindings
+  "x e" 'eval-buffer
+  "x R" 'restart-emacs
+  "x Q" 'save-buffers-kill-terminal
   
   ;; goto group of comamands
   "g" '(:ignore t :which-key "goto")
@@ -597,6 +667,7 @@
   "w m" 'hydra-window-move/body
   "w z" 'hydra-text-zoom/body
   "w s" 'hydra-window-scroll/body
+  "w c" 'pulsar-recenter-middle
   "w o" 'other-window
   "w d" 'delete-window
   "w D" 'delete-other-windows
@@ -604,18 +675,18 @@
   ;; deal with files
   "f" '(:ignore t :which-key "files")
   ;; TODO: create, open, delete, etc.
-  "fs" 'find-file
-  "ff" 'consult-fd ;; find file
-  "fF" 'consult-find
-  "fr" 'consult-recent-file
+  "f s" 'find-file
+  "f f" 'consult-fd ;; find file
+  "f F" 'consult-find
+  "f r" 'consult-recent-file
 
   ;; deal with buffer
   "b" '(:ignore t :which-key "buffers")
-  "bs" 'save-buffer
-  "bb" 'switch-to-buffer
-  "bB" 'consult-buffer
-  "bp" 'consult-project-buffer
-  "bk" 'kill-buffer
+  "b s" 'save-buffer
+  "b b" 'switch-to-buffer
+  "b B" 'consult-buffer
+  "b p" 'consult-project-buffer
+  "b k" 'kill-buffer
 
   ;; base text operations
   "-" 'pulsar-pulse-line
@@ -634,6 +705,7 @@
   ;; TODO: put the dired commands here
   
   )
+
 
 
 ;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)
