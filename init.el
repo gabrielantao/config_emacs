@@ -262,12 +262,11 @@
       (pulsar-pulse-line))))
 
 ;; IMPROVE THE SEARCH/REPLACE SYSTEM
-;; (use-package rg
-;;   :ensure t
-;;   :bind (("C-c r" . rg-run)))
-;; (rg-enable-default-bindings)
+;; useful because projectile depends on it
+(use-package rg)
+(rg-enable-default-bindings)
 
-;; ;; vanubi
+;; TODO: check if will keep this or just rg with projectile
 (use-package deadgrep
     :bind (:map deadgrep-mode-map
               ("l" . deadgrep-forward-match)
@@ -386,6 +385,68 @@
 ;; use consult to help projectile experience
 (use-package consult-projectile
   :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+
+(use-package perspective
+  :straight t
+  ;; :bind
+  ;; ("C-x C-b" . persp-list-buffers)
+  :custom
+  (persp-mode-prefix-key (kbd "C-c p"))
+  :init
+  (persp-mode))
+
+(use-package persp-projectile
+  :straight t
+  :after (perspective projectile)
+  :bind ("C-c p p" . projectile-persp-switch-project))
+
+;; configs of Dired
+(setq global-auto-revert-non-file-buffers t)
+(setq auto-revert-verbose nil)
+(setq dired-listing-switches "-alh --group-directories-first")
+(add-hook 'dired-mode-hook 'auto-revert-mode)
+
+(use-package dired-sidebar
+  :ensure t
+  :commands (dired-sidebar-toggle-sidebar)
+  :custom
+  (dired-sidebar-theme 'nerd) ;; Usa ícones Nerd Font
+  (dired-sidebar-use-term-integration t)
+  :bind ("C-x C-d" . dired-sidebar-toggle-sidebar))
+
+(use-package ibuffer-sidebar
+  :ensure t
+  :bind ("C-x C-b" . ibuffer-sidebar-toggle-sidebar))
+
+(use-package diredfl
+  :hook (dired-mode . diredfl-mode))
+
+(use-package nerd-icons-dired
+  :ensure t
+  :hook (dired-mode . nerd-icons-dired-mode))
+
+;; filtering and sorting for the Dired
+(use-package dired-filter)
+(use-package dired-quick-sort)
+
+
+;; deal with todo list
+(use-package hl-todo
+  :straight t
+  :hook (prog-mode . hl-todo-mode)
+  :config
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
+        '(("TODO"   . "#FF4500")
+          ("FIXME"  . "#FF0000")
+          ("NOTE"   . "#1E90FF")
+          ("HACK"   . "#8A2BE2")
+          ("REVIEW" . "#FFD700"))))
+
+(use-package consult-todo
+  :demand t
+  :config
+  (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
 
 ;; completitions for the code and text
 (use-package corfu
@@ -634,29 +695,35 @@
   "x R" 'restart-emacs
   "x Q" 'save-buffers-kill-terminal
   
-  ;; goto group of comamands
-  "g" '(:ignore t :which-key "goto")
+  ;; jump group of commands
+  "j" '(:ignore t :which-key "jump")
   ;; first ace jump movements
-  "g c" 'avy-goto-char
-  "g w" 'avy-goto-word-1
-  "g l" 'avy-goto-line
-  "g t" 'avy-goto-char-timer
-  "g k" 'ace-link
+  "j c" 'avy-goto-char
+  "j w" 'avy-goto-word-1
+  "j l" 'avy-goto-line ;; go to line using letters
+  "j t" 'avy-goto-char-timer
+  "j k" 'ace-link
   ;; then bigger jumps
-  "g r" 'consult-goto-line
-  "g f" 'consult-line
-  "g F" 'consult-line-multi
-  "g i" 'consult-imenu
-  "g I" 'consult-imenu-multi
-  "g o" 'consult-outline
-  "g m" 'consult-mark
-  "g M" 'consult-global-mark
-  "g B" 'consult-bookmark
-
+  "j r" 'consult-goto-line ;; go to line using number
+  "j s" 'consult-line ;; jump-to-searched term line
+  "j S" 'consult-line-multi
+  "j i" 'consult-imenu
+  "j I" 'consult-imenu-multi
+  "j o" 'consult-outline
+  "j m" 'consult-mark
+  "j M" 'consult-global-mark
+  "j B" 'consult-bookmark
+  ;; todo jump
+  "j T" '(:ignore t :which-key "todo")
+  "j T t" 'consult-todo
+  "j T p" 'consult-todo-project
+  "j T a" 'consult-todo-all
+  "j T d" 'consult-todo-dir
+  
   ;; search and replace
   "s" '(:ignore t :which-key "search/replace")
   "s g" 'consult-ripgrep
-  "s d" 'deadgrep
+  ;;"s d" 'deadgrep
   "s r" 'anzu-query-replace
   "s R" 'anzu-query-replace-regexp
   "s b" 'my/anzu-replace-in-buffer
@@ -674,9 +741,8 @@
 
   ;; deal with files
   "f" '(:ignore t :which-key "files")
-  ;; TODO: create, open, delete, etc.
   "f s" 'find-file
-  "f f" 'consult-fd ;; find file
+  "f f" 'consult-fd ;; find file with fd
   "f F" 'consult-find
   "f r" 'consult-recent-file
 
@@ -687,7 +753,50 @@
   "b B" 'consult-buffer
   "b p" 'consult-project-buffer
   "b k" 'kill-buffer
-
+  ;; manage keybindings for the project
+  "p" '(:ignore t :which-key "project")
+  "p d" 'dired-sidebar-toggle-sidebar
+  "p D" 'projectile-dired
+  "p i" 'ibuffer-sidebar-toggle-sidebar
+  ;; TODO: fix this because open projects and persp (workspaces) are different things
+  ;;"p o" 'consult-projectile-switch-open-project
+  ;;"p O" 'consult-projectile-switch-project
+  ;; TODO: configure also the shell here ...
+  ;; "p t" 'projectile-vterm
+  ;; "p T" 'projectile-shell
+  ;; project workspaces (perspectives)
+  "p w" '(:ignore t :which-key "workspaces")
+  "p w c" 'persp-switch
+  "p w i" 'persp-ibuffer
+  "p w k" 'persp-kill
+  "p w s" 'persp-state-save
+  "p w l" 'persp-state-load
+  "p w r" 'persp-state-restore
+  "p w o" 'projectile-persp-switch-project
+  ;; projectile search and replace
+  "p s" '(:ignore t :which-key "search")
+  "p s f" 'consult-projectile-find-file
+  "p s d" 'consult-projectile-find-dir
+  "p s t" 'projectile-find-test-file
+  "p s y" 'projectile-find-references
+  "p s g" 'projectile-ripgrep
+  "p s r" 'projectile-replace
+  "p s R" 'projectile-replace-regexp
+  ;; buffers in this project
+  "p b" '(:ignore t :which-key "buffers")
+  "p b s" 'projectile-save-project-buffers
+  "p b b" 'consult-projectile-switch-to-buffer
+  "p b r" 'consult-projectile-recentf
+  "p b i" 'projectile-ibuffer
+  ;; execution commands
+  "p x" '(:ignore t :which-key "execute")
+  "p x C" 'projectile-configure-project
+  "p x c" 'projectile-compile-project
+  "p x t" 'projectile-test-project
+  "p x r" 'projectile-run-project
+  "p x P" 'projectile-package-project
+  "p x I" 'projectile-install-project
+   
   ;; base text operations
   "-" 'pulsar-pulse-line
   ";" 'comment-line
@@ -695,14 +804,10 @@
   "Z" 'undo-redo
   "y" 'yank ;; paste
   "Y" 'consult-yank-replace ;; consult available paste list
-  ;; TODO: add entry for the visual mode
   
-  ;; TODO: filter only most used projectile commands to be used under p prefix
-  "p" 'projectile-command-map
-  
+  ;; TODO: add entry for the visual mode (ryo)
   ;; TODO: put the flycheck commands here
   ;; TODO: put the magit commands here
-  ;; TODO: put the dired commands here
   
   )
 
