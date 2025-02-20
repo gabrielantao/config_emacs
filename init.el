@@ -359,6 +359,8 @@
   (setq consult-preview-key 'any)
   (setq consult-narrow-key "<"))
 
+(use-package consult-dir)
+
 (use-package embark
   :bind
   (("C-." . embark-act)
@@ -401,34 +403,96 @@
   :bind ("C-c p p" . projectile-persp-switch-project))
 
 ;; configs of Dired
+(setq dired-kill-when-opening-new-dired-buffer t)
 (setq global-auto-revert-non-file-buffers t)
 (setq auto-revert-verbose nil)
-(setq dired-listing-switches "-alh --group-directories-first")
+(setq ls-lisp-ignore-case t)
+(setq ls-lisp-dirs-first t)
+(setq dired-listing-switches "-Alh --group-directories-first --sort=version")
 (add-hook 'dired-mode-hook 'auto-revert-mode)
+(add-hook 'dired-mode-hook 'hl-line-mode)
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
 
-(use-package dired-sidebar
+
+(use-package treemacs
   :ensure t
-  :commands (dired-sidebar-toggle-sidebar)
-  :custom
-  (dired-sidebar-theme 'nerd) ;; Usa ícones Nerd Font
-  (dired-sidebar-use-term-integration t)
-  :bind ("C-x C-d" . dired-sidebar-toggle-sidebar))
+  :defer t
+  :config
+  (treemacs-follow-mode t)
+  (setq treemacs-theme 'icons)  ;; Pode ser 'icons' ou 'arrow'
+  (setq treemacs-position 'left)  ;; Posicionamento do treemacs (opções: 'left', 'right', 'top', 'bottom')
+  (setq treemacs-width 40)  ;; Largura da janela do treemacs
+  (setq treemacs-indentation 2)  ;; Indentação dos itens no treemacs
+  (setq treemacs-show-hidden-files t)  ;; Mostrar arquivos ocultos (aqueles que começam com ponto)
+  (setq treemacs-show-workspace-sidebar t)  ;; Mostrar barra lateral de workspace
+  (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))  ;; Armazenar as configurações de workspace
+  (treemacs-resize-icons 15)
+    :bind
+  ("C-x t t" . treemacs)  ;; Atalho para abrir/fechar o Treemacsq
+  ("C-x t d" . treemacs-select-directory)  ;; Abrir Treemacs para um diretório específico
+  ("C-x t p" . treemacs-projectile)  ;; Abrir Treemacs com Projectile
+  ("C-x t f" . treemacs-find-file))
 
-(use-package ibuffer-sidebar
-  :ensure t
-  :bind ("C-x C-b" . ibuffer-sidebar-toggle-sidebar))
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :ensure t)
 
+(use-package treemacs-icons-dired
+  :hook (dired-mode . treemacs-icons-dired-enable-once)
+  :ensure t)
+
+;; add colors to Dired
 (use-package diredfl
   :hook (dired-mode . diredfl-mode))
 
-(use-package nerd-icons-dired
-  :ensure t
-  :hook (dired-mode . nerd-icons-dired-mode))
+;; some of the dired-hacks utilities
+(use-package dired-filter
+  :after dired
+  :bind (:map dired-mode-map
+              ;; unbind original ones
+              ("/ i g" . nil)
+              ("/ A" . nil)
+              ("/ D" . nil)
+              ("/ L" . nil)
+              ("/ S" . nil)
+              ;; bind useful groups
+              ("/ G" . dired-filter-by-git-ignored)
+              ("/ F a" . dired-filter-add-saved-filters)
+              ("/ F d" . dired-filter-delete-saved-filters)
+              ("/ F l" . dired-filter-load-saved-filters)
+              ("/ F s" . dired-filter-save-filters)))
 
-;; filtering and sorting for the Dired
-(use-package dired-filter)
+(use-package dired-subtree
+  :after dired
+    :bind (:map dired-mode-map
+              ("<tab>" . dired-subtree-toggle)))
+
+(use-package dired-narrow
+  :bind (:map dired-mode-map
+              ("/ i n" . dired-narrow)
+              ("/ i r" . dired-narrow-regexp)
+              ("/ i f" . dired-narrow-fuzzy)))
+
+;; TODO: try and configure these dired hacks
+;; (use-package dired-avfs)
+;; (use-package dired-collapse
+;;   :hook (dired-mode . dired-collapse-mode))
+;; (use-package dired-rainbow
+;;   :config
+;;   (dired-rainbow-define html "#8b0000" "\\.html?$")
+;;   (dired-rainbow-define media "#ff4500" "\\.mp3$|\\.mp4$|\\.avi$")
+;;   (dired-rainbow-define log "#ff1493" "\\.log$"))
+;; (use-package dired-open
+;;   :config
+;;   (setq dired-open-extensions '(("mp4" . "vlc")
+;;                                 ("mkv" . "vlc")
+;;                                 ("png" . "feh")
+;;                                 ("jpg" . "feh"))))
+
+
+;; load hydra to proper sort the files
 (use-package dired-quick-sort)
-
 
 ;; deal with todo list
 (use-package hl-todo
@@ -455,8 +519,7 @@
   :custom
   (corfu-auto t)
   (corfu-cycle t)
-  (corfu-quit-at-boundary nil)
-  (corfu-preview-current t))
+  (corfu-quit-at-boundary nil))
 
 (use-package nerd-icons-corfu
   :after corfu
@@ -487,6 +550,12 @@
   (yas-global-mode 1)
   (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
   (setq yas-prompt-functions '(yas-completing-prompt)))
+
+(use-package yasnippet-snippets)
+
+(use-package consult-yasnippet
+  :ensure t
+  :after (consult yasnippet))
 
 (use-package flycheck
   :init
@@ -680,6 +749,10 @@
 ;; moving between symbols
 ;; move line or region to line X or above/below line
 
+(defun my-insert-backslash ()
+  "Insert a backslash (`\\`)."
+  (interactive)
+  (insert "\\"))
 
 (general-create-definer my/leader-key
   :keymaps 'override ;; Garante que o atalho funcione globalmente
@@ -687,62 +760,66 @@
   :global-prefix "C-\\") ;; Alternativa para teclados sem tecla "SPC"
 (my/leader-key
   ;; commands to execute
-  "x" '(:ignore t :which-key "execute")
-  "x x" 'execute-extended-command
-  "x a" 'embark-act
-  "x b" 'embark-bindings
-  "x e" 'eval-buffer
-  "x R" 'restart-emacs
-  "x Q" 'save-buffers-kill-terminal
+  "e" '(:ignore t :which-key "execute")
+  "e x" 'execute-extended-command
+  "e a" 'embark-act
+  "e b" 'embark-bindings
+  "e e" 'eval-buffer
+  "e R" 'restart-emacs
+  "e Q" 'save-buffers-kill-terminal
+  "e g" 'magit
   
-  ;; jump group of commands
+  ;; ace jump in visible area of buffers
   "j" '(:ignore t :which-key "jump")
-  ;; first ace jump movements
   "j c" 'avy-goto-char
   "j w" 'avy-goto-word-1
   "j l" 'avy-goto-line ;; go to line using letters
   "j t" 'avy-goto-char-timer
   "j k" 'ace-link
-  ;; then bigger jumps
-  "j r" 'consult-goto-line ;; go to line using number
-  "j s" 'consult-line ;; jump-to-searched term line
-  "j S" 'consult-line-multi
-  "j i" 'consult-imenu
-  "j I" 'consult-imenu-multi
-  "j o" 'consult-outline
-  "j m" 'consult-mark
-  "j M" 'consult-global-mark
-  "j B" 'consult-bookmark
+  
+  ;; bigger jumps throughout the buffers to specific points
+  "g" '(:ignore t :which-key "goto")
+  "g l" 'consult-goto-line ;; go to line using number
+  "g s" 'consult-line ;; go to searched term
+  "g S" 'consult-line-multi
+  "g i" 'consult-imenu
+  "g I" 'consult-imenu-multi
+  "g o" 'consult-outline
+  "g m" 'consult-mark
+  "g M" 'consult-global-mark
+  "g B" 'consult-bookmark
   ;; todo jump
-  "j T" '(:ignore t :which-key "todo")
-  "j T t" 'consult-todo
-  "j T p" 'consult-todo-project
-  "j T a" 'consult-todo-all
-  "j T d" 'consult-todo-dir
+  "g T" '(:ignore t :which-key "todo")
+  "g T t" 'consult-todo
+  "g T p" 'consult-todo-project
+  "g T a" 'consult-todo-all
+  "g T d" 'consult-todo-dir
   
   ;; search and replace
   "s" '(:ignore t :which-key "search/replace")
   "s g" 'consult-ripgrep
+  ;; TODO: remove it and use ripgrep directly
   ;;"s d" 'deadgrep
   "s r" 'anzu-query-replace
   "s R" 'anzu-query-replace-regexp
   "s b" 'my/anzu-replace-in-buffer
   "s B" 'my/anzu-replace-in-buffer-regexp
   
-  ;; windows configs
+  ;; windows management and movements
   "w" '(:ignore t :which-key "window")
   "w m" 'hydra-window-move/body
-  "w z" 'hydra-text-zoom/body
   "w s" 'hydra-window-scroll/body
+  "w z" 'hydra-text-zoom/body
   "w c" 'pulsar-recenter-middle
   "w o" 'other-window
   "w d" 'delete-window
   "w D" 'delete-other-windows
 
   ;; deal with files
-  "f" '(:ignore t :which-key "files")
+  "f" '(:ignore t :which-key "files/dir")
+  "f d" 'consult-dir
   "f s" 'find-file
-  "f f" 'consult-fd ;; find file with fd
+  "f f" 'consult-fd    ;; find file with fd
   "f F" 'consult-find
   "f r" 'consult-recent-file
 
@@ -753,14 +830,16 @@
   "b B" 'consult-buffer
   "b p" 'consult-project-buffer
   "b k" 'kill-buffer
+  "b K" 'kill-this-buffer
+ 
   ;; manage keybindings for the project
   "p" '(:ignore t :which-key "project")
-  "p d" 'dired-sidebar-toggle-sidebar
-  "p D" 'projectile-dired
-  "p i" 'ibuffer-sidebar-toggle-sidebar
-  ;; TODO: fix this because open projects and persp (workspaces) are different things
-  ;;"p o" 'consult-projectile-switch-open-project
-  ;;"p O" 'consult-projectile-switch-project
+  "p m" '(:ignore t :which-key "management")
+  "p m t" 'treemacs          ;; directories in a sidebar
+  "p m T" 'treemacs-projectile
+  "p m d" 'projectile-dired
+  "p m o" 'projectile-switch-open-project
+  "p m O" 'consult-projectile-switch-project
   ;; TODO: configure also the shell here ...
   ;; "p t" 'projectile-vterm
   ;; "p T" 'projectile-shell
@@ -798,19 +877,23 @@
   "p x I" 'projectile-install-project
    
   ;; base text operations
+  "y" 'consult-yasnippet
+  "Y" 'yas-expand
+  "\\" 'my-insert-backslash
   "-" 'pulsar-pulse-line
   ";" 'comment-line
   "z" 'undo
   "Z" 'undo-redo
-  "y" 'yank ;; paste
-  "Y" 'consult-yank-replace ;; consult available paste list
+  "c" 'kill-ring-save ;; copy
+  "x" 'kill-region ;; cut region
+  "X" 'kill-whole-line
+  "v" 'yank ;; paste
+  "V" 'consult-yank-replace ;; consult available paste list
   
   ;; TODO: add entry for the visual mode (ryo)
   ;; TODO: put the flycheck commands here
-  ;; TODO: put the magit commands here
   
   )
-
 
 
 ;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)
@@ -867,14 +950,15 @@
    ;; TODO: add M to call hydra to advanced selection "submode"
    ;; (e.g. select current line, backward, forward, multicursor, regex, etc)
    ;; basic copy/cut/paste commands (kill/yank)
-   ("h" kill-ring-save) ;; copy
+   ("c" kill-ring-save) ;; copy
    ;; TODO: add H for advanced the kill (hydra) advanced mode
    ;;  e.g. word, line paragraph, buffer, etc.
-   ("d" kill-region) ;; cut region
-   ("D" kill-whole-line) ;; cut line
-   ("y" yank) ;; paste
-   ("Y" consult-yank-replace))
-  
+   ("C" kill-region) ;; cut region
+   ("d" kill-whole-line) ;; cut line
+   ("v" yank) ;; paste
+   ("V" consult-yank-replace))
+
+
   (ryo-modal-keys
    ;; First argument to ryo-modal-keys may be a list of keywords.
    ;; These keywords will be applied to all keybindings.
