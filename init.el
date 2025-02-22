@@ -79,8 +79,6 @@
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default t)
 
-;; IMPROVED GENERAL ASPECT
-;; Definição das cores do cursor
 (defvar my-cursor-default-color "magenta"
   "Default color for the cursor.")
 
@@ -166,7 +164,7 @@
   ;;(require 'smartparens-config)  ;; Carrega a configuração padrão
   (smartparens-global-mode 1)    ;; Ativa o modo globalmente
   (show-smartparens-global-mode t)
-  
+
   (custom-set-faces
    '(sp-show-pair-match-face
      ((t (:foreground "#f8f8f2" :background "#44475a" :weight bold))))
@@ -180,7 +178,6 @@
          ("C-<" . 'mc/mark-previous-like-this)
          ("C-c C-<" . 'mc/mark-all-like-this)))
 
-;; IMPROVED NAVIGATION EXPERIENCE
 ;; configure the to jump with avy
 (use-package avy
   :straight t
@@ -261,7 +258,6 @@
     (when (> num-lines 1)
       (pulsar-pulse-line))))
 
-;; IMPROVE THE SEARCH/REPLACE SYSTEM
 ;; useful because projectile depends on it
 (use-package rg)
 (rg-enable-default-bindings)
@@ -279,7 +275,6 @@
               ("p" . nil) ;; previous
               ("n" . nil) ;; next
               ("g" . nil))) ;; restart
-;;outro vanubi
 
 (use-package wgrep
   :after deadgrep
@@ -305,15 +300,12 @@
   (goto-char (point-min))
   (call-interactively 'anzu-query-replace))
 
-
 (defun my/anzu-replace-regexp-in-buffer ()
   "Move para o topo do buffer antes de substituir com anzu."
   (interactive)
   (goto-char (point-min))
   (call-interactively 'anzu-query-replace-regexp))
 
-;; BETTER ADIVISOR SYSTEMS
-;; configure the helpful package
 (use-package helpful
   :bind
   (("C-h f" . helpful-callable)
@@ -322,38 +314,32 @@
    ("C-h x" . helpful-command)
    ("C-c C-d" . helpful-at-point)))
 
-;; configure the which key
 (use-package which-key
   :config
   (which-key-mode)
   (setq which-key-idle-delay 1.0)
   (setq which-key-idle-secondary-delay 0.05))
 
-;; vertigo
 (use-package vertico
   :init
   (vertico-mode 1)
   :custom
   (vertico-cycle t))
 
-;; savehist
 (use-package savehist
   :init
   (savehist-mode 1))
 
-;; marginalia
 (use-package marginalia
   :init
   (marginalia-mode 1))
 
-;; orderless
 (use-package orderless
   :ensure t
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
-;; consult
 (use-package consult
   :init
   (setq consult-preview-key 'any)
@@ -374,143 +360,157 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-
-;; IDE FEATURES CONFIGURED HERE...
 ;; project management
-(use-package projectile
-  :config
-  (projectile-mode 1)
-  (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-(setq projectile-generic-command "rg --files --hidden")
+      (use-package projectile
+        :config
+        (projectile-mode 1)
+        (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
+        (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+      (setq projectile-generic-command "rg --files --hidden")
 
-;; use consult to help projectile experience
-(use-package consult-projectile
-  :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+      ;; use consult to help projectile experience
+      (use-package consult-projectile
+        :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
 
-(use-package perspective
-  :straight t
-  ;; :bind
-  ;; ("C-x C-b" . persp-list-buffers)
-  :custom
-  (persp-mode-prefix-key (kbd "C-c p"))
-  :init
-  (persp-mode))
+      ;; perspective to have a workspace-like features
+      (use-package perspective
+        :straight t
+        ;; :bind
+        ;; ("C-x C-b" . persp-list-buffers)
+        :custom
+        (persp-mode-prefix-key (kbd "C-c p"))
+        :init
+        (persp-mode))
 
-(use-package persp-projectile
-  :straight t
-  :after (perspective projectile)
-  :bind ("C-c p p" . projectile-persp-switch-project))
+      (use-package magit
+        :bind (("C-x g" . magit-status))
+        :config
+        (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
 
-;; configs of Dired
-(setq dired-kill-when-opening-new-dired-buffer t)
-(setq global-auto-revert-non-file-buffers t)
-(setq auto-revert-verbose nil)
-(setq ls-lisp-ignore-case t)
-(setq ls-lisp-dirs-first t)
-(setq dired-listing-switches "-Alh --group-directories-first --sort=version")
-(add-hook 'dired-mode-hook 'auto-revert-mode)
-(add-hook 'dired-mode-hook 'hl-line-mode)
-(with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
+  (use-package treemacs
+      :ensure t
+      :defer t
+      :config
+      (treemacs-follow-mode t)
+      (setq treemacs-theme 'icons)
+      (setq treemacs-position 'left)
+      (setq treemacs-width 40)
+      (setq treemacs-indentation 2)
+      (setq treemacs-show-hidden-files t)
+      (setq treemacs-show-workspace-sidebar t)
+      (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))
+      (treemacs-resize-icons 15)
+        :bind
+      ("C-x t t" . treemacs)
+      ("C-x t d" . treemacs-select-directory)
+      ("C-x t p" . treemacs-projectile)
+      ("C-x t f" . treemacs-find-file))
 
+    (use-package treemacs-projectile
+      :after (treemacs projectile)
+      :ensure t)
 
-(use-package treemacs
-  :ensure t
-  :defer t
-  :config
-  (treemacs-follow-mode t)
-  (setq treemacs-theme 'icons)  ;; Pode ser 'icons' ou 'arrow'
-  (setq treemacs-position 'left)  ;; Posicionamento do treemacs (opções: 'left', 'right', 'top', 'bottom')
-  (setq treemacs-width 40)  ;; Largura da janela do treemacs
-  (setq treemacs-indentation 2)  ;; Indentação dos itens no treemacs
-  (setq treemacs-show-hidden-files t)  ;; Mostrar arquivos ocultos (aqueles que começam com ponto)
-  (setq treemacs-show-workspace-sidebar t)  ;; Mostrar barra lateral de workspace
-  (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))  ;; Armazenar as configurações de workspace
-  (treemacs-resize-icons 15)
-    :bind
-  ("C-x t t" . treemacs)  ;; Atalho para abrir/fechar o Treemacsq
-  ("C-x t d" . treemacs-select-directory)  ;; Abrir Treemacs para um diretório específico
-  ("C-x t p" . treemacs-projectile)  ;; Abrir Treemacs com Projectile
-  ("C-x t f" . treemacs-find-file))
+    (use-package treemacs-icons-dired
+      :hook (dired-mode . treemacs-icons-dired-enable-once)
+      :ensure t)
 
-(use-package treemacs-projectile
-  :after (treemacs projectile)
-  :ensure t)
+    ;; configs of Dired
+    (setq dired-kill-when-opening-new-dired-buffer t)
+    (setq global-auto-revert-non-file-buffers t)
+    (setq auto-revert-verbose nil)
+    (setq ls-lisp-ignore-case t)
+    (setq ls-lisp-dirs-first t)
+    (setq dired-listing-switches "-Alh --group-directories-first --sort=version")
+    (add-hook 'dired-mode-hook 'auto-revert-mode)
+    (add-hook 'dired-mode-hook 'hl-line-mode)
+    (with-eval-after-load 'dired
+      (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
 
-(use-package treemacs-icons-dired
-  :hook (dired-mode . treemacs-icons-dired-enable-once)
-  :ensure t)
+    ;; add colors to Dired
+    (use-package diredfl
+      :hook (dired-mode . diredfl-mode))
 
-;; add colors to Dired
-(use-package diredfl
-  :hook (dired-mode . diredfl-mode))
-
-;; some of the dired-hacks utilities
-(use-package dired-filter
+  (use-package dired-filter
   :after dired
-  :bind (:map dired-mode-map
-              ;; unbind original ones
-              ("/ i g" . nil)
-              ("/ A" . nil)
-              ("/ D" . nil)
-              ("/ L" . nil)
-              ("/ S" . nil)
-              ;; bind useful groups
-              ("/ G" . dired-filter-by-git-ignored)
-              ("/ F a" . dired-filter-add-saved-filters)
-              ("/ F d" . dired-filter-delete-saved-filters)
-              ("/ F l" . dired-filter-load-saved-filters)
-              ("/ F s" . dired-filter-save-filters)))
+  :config
+  (define-key dired-mode-map (kbd "/ g") 'dired-filter-by-git-ignored)
+  (define-key dired-mode-map (kbd "/ i g") nil))
 
 (use-package dired-subtree
   :after dired
-    :bind (:map dired-mode-map
-              ("<tab>" . dired-subtree-toggle)))
+  :config
+  (define-key dired-mode-map (kbd "<tab>") 'dired-subtree-toggle))
 
 (use-package dired-narrow
-  :bind (:map dired-mode-map
-              ("/ i n" . dired-narrow)
-              ("/ i r" . dired-narrow-regexp)
-              ("/ i f" . dired-narrow-fuzzy)))
-
-;; TODO: try and configure these dired hacks
-;; (use-package dired-avfs)
-;; (use-package dired-collapse
-;;   :hook (dired-mode . dired-collapse-mode))
-;; (use-package dired-rainbow
-;;   :config
-;;   (dired-rainbow-define html "#8b0000" "\\.html?$")
-;;   (dired-rainbow-define media "#ff4500" "\\.mp3$|\\.mp4$|\\.avi$")
-;;   (dired-rainbow-define log "#ff1493" "\\.log$"))
-;; (use-package dired-open
-;;   :config
-;;   (setq dired-open-extensions '(("mp4" . "vlc")
-;;                                 ("mkv" . "vlc")
-;;                                 ("png" . "feh")
-;;                                 ("jpg" . "feh"))))
-
-
-;; load hydra to proper sort the files
-(use-package dired-quick-sort)
-
-;; deal with todo list
-(use-package hl-todo
-  :straight t
-  :hook (prog-mode . hl-todo-mode)
+  :after dired
   :config
-  (setq hl-todo-highlight-punctuation ":"
-        hl-todo-keyword-faces
-        '(("TODO"   . "#FF4500")
-          ("FIXME"  . "#FF0000")
-          ("NOTE"   . "#1E90FF")
-          ("HACK"   . "#8A2BE2")
-          ("REVIEW" . "#FFD700"))))
+  (define-key dired-mode-map (kbd "/ N") 'dired-narrow)
+  (define-key dired-mode-map (kbd "/ R") 'dired-narrow-regexp)
+  (define-key dired-mode-map (kbd "/ F") 'dired-narrow-fuzzy))
 
-(use-package consult-todo
-  :demand t
+   ;; TODO: try and configure these dired hacks
+     ;; 
+ ;; (use-package dired-avfs)
+    ;; (use-package dired-collapse
+    ;;   :hook (dired-mode . dired-collapse-mode))
+    ;; (use-package dired-rainbow
+    ;;   :config
+    ;;   (dired-rainbow-define html "#8b0000" "\\.html?$")
+    ;;   (dired-rainbow-define media "#ff4500" "\\.mp3$|\\.mp4$|\\.avi$")
+    ;;   (dired-rainbow-define log "#ff1493" "\\.log$"))
+    ;; (use-package dired-open
+    ;;   :config
+    ;;   (setq dired-open-extensions '(("mp4" . "vlc")
+    ;;                                 ("mkv" . "vlc")
+    ;;                                 ("png" . "feh")
+    ;;                                 ("jpg" . "feh"))))
+
+    ;; load hydra to proper sort the files
+    (use-package dired-quick-sort)
+
+    ;; deal with todo list
+    (use-package hl-todo
+      :straight t
+      :hook (prog-mode . hl-todo-mode)
+      :config
+      (setq hl-todo-highlight-punctuation ":"
+            hl-todo-keyword-faces
+            '(("TODO"   . "#FF4500")
+              ("FIXME"  . "#FF0000")
+              ("NOTE"   . "#1E90FF")
+              ("HACK"   . "#8A2BE2")
+              ("REVIEW" . "#FFD700"))))
+
+    (use-package consult-todo
+      :demand t
+      :config
+      (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
+
+;; TODO: configure the emacs lisp here...
+(use-package org
+  :ensure t
+  :pin gnu
   :config
-  (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
+  (setq org-startup-indented t         
+        ;org-hide-leading-stars t       ;; Oculta os asteriscos iniciais
+        org-ellipsis " ▼ "
+        org-src-fontify-natively t
+        
+        ; org-log-done 'time
+        org-log-into-drawer t)
+
+  (setq org-directory "~/Documents/notes")         
+  (setq org-agenda-files '("~/Documents/notes/agenda.org")))
+
+(use-package org-superstar
+  :hook (org-mode . org-superstar-mode)
+  :custom
+  (org-superstar-headline-bullets-list '("⬘ " "⬗ " "⬙ " "⬖ " "●" "●" "●" "●")))
+
+(use-package org-auto-tangle
+  :hook (org-mode . org-auto-tangle-mode)
+  :config
+  (setq org-auto-tangle-default t))
 
 ;; completitions for the code and text
 (use-package corfu
@@ -563,6 +563,7 @@
   :config
   (setq flycheck-highlighting-mode 'symbols))
 
+;; TODO: add here the flyspell too
 
 (defun my/setup-lsp-mode ()
   "Basic setup for the lsp-mode."
@@ -623,13 +624,11 @@
 (use-package python-mode
   :hook (python-mode . lsp-deferred))
 
-
 (use-package dap-mode
   :after lsp-mode
   :hook (python-mode . dap-mode)
   :config
   (require 'dap-python))
-
 
 ;; configure the lsp-docker in order to run the LSP servers inside the containers
 ;; and then do not need to install anything directly in my machine
@@ -643,16 +642,8 @@
 ;;  :client-packages lsp-docker-client-packages
 ;;  :client-configs lsp-docker-client-configs)
 
-(use-package magit
-  :bind (("C-x g" . magit-status))
-  :config
-  (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
-
-
-;; HYDRAS!
 (use-package hydra)
 ;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
-
 
 ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
 ;; TODO: review if need these lambda interactive here
@@ -731,8 +722,6 @@
   ("q" nil "quit"))
 ;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
 
-
-;; MODAL EDITIONS
 (use-package general)
 
   ;; TODO: create another general group for these (maybe)
@@ -768,7 +757,7 @@
   "e R" 'restart-emacs
   "e Q" 'save-buffers-kill-terminal
   "e g" 'magit
-  
+
   ;; ace jump in visible area of buffers
   "j" '(:ignore t :which-key "jump")
   "j c" 'avy-goto-char
@@ -776,7 +765,7 @@
   "j l" 'avy-goto-line ;; go to line using letters
   "j t" 'avy-goto-char-timer
   "j k" 'ace-link
-  
+
   ;; bigger jumps throughout the buffers to specific points
   "g" '(:ignore t :which-key "goto")
   "g l" 'consult-goto-line ;; go to line using number
@@ -794,7 +783,7 @@
   "g T p" 'consult-todo-project
   "g T a" 'consult-todo-all
   "g T d" 'consult-todo-dir
-  
+
   ;; search and replace
   "s" '(:ignore t :which-key "search/replace")
   "s g" 'consult-ripgrep
@@ -804,7 +793,7 @@
   "s R" 'anzu-query-replace-regexp
   "s b" 'my/anzu-replace-in-buffer
   "s B" 'my/anzu-replace-in-buffer-regexp
-  
+
   ;; windows management and movements
   "w" '(:ignore t :which-key "window")
   "w m" 'hydra-window-move/body
@@ -831,7 +820,7 @@
   "b p" 'consult-project-buffer
   "b k" 'kill-buffer
   "b K" 'kill-this-buffer
- 
+
   ;; manage keybindings for the project
   "p" '(:ignore t :which-key "project")
   "p m" '(:ignore t :which-key "management")
@@ -875,7 +864,7 @@
   "p x r" 'projectile-run-project
   "p x P" 'projectile-package-project
   "p x I" 'projectile-install-project
-   
+
   ;; base text operations
   "y" 'consult-yasnippet
   "Y" 'yas-expand
@@ -889,13 +878,13 @@
   "X" 'kill-whole-line
   "v" 'yank ;; paste
   "V" 'consult-yank-replace ;; consult available paste list
-  
+
   ;; TODO: add entry for the visual mode (ryo)
   ;; TODO: put the flycheck commands here
-  
+
   )
 
-
+;; TODO: you must think better about it, maybe this could be just an hydra to do the movements and selections
 ;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)
 ;; check for functionalities in evil, vim, spacemacs (visual mode), and meow helix/kakoune
 ;; to do rich selections
@@ -909,7 +898,7 @@
     "Show the current ryo-modal-mode keybindings in a which-key popup."
     (interactive)
     (which-key-show-keymap 'ryo-modal-mode-map))
-  
+
   (ryo-modal-keys
    ("," ryo-modal-repeat)
    ("q" ryo-modal-mode)
@@ -938,7 +927,7 @@
    ;; Q wW eE rR tT pP |
    ;; aA sS Ff gG H :; '"
    ;; xX cC vV bB nN M ,< .> /?
-   
+
    ;; base command section
    ("ESC" keyboard-quit)
    ("-" pulsar-pulse-line)
@@ -973,4 +962,3 @@
    ("7" "M-7")
    ("8" "M-8")
    ("9" "M-9")))
-
