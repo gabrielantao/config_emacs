@@ -3,73 +3,67 @@
 
 * Basic configs
 #+begin_src emacs-lisp
-    (tool-bar-mode -1)
-  (menu-bar-mode -1)
-  (setq inhibit-splash-screen t)
+   ;; ignore anoying default features of Emacs
+   (tool-bar-mode -1)
+   (menu-bar-mode -1)
+   (setq inhibit-splash-screen t)
+   (setq ring-bell-function 'ignore)
 
-  ;; show the positions and line highlith
-  (setq column-number-mode t)
-  (add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
-  (add-hook 'prog-mode-hook 'display-line-numbers-mode)
-  (global-hl-line-mode 0)
-  (setq left-fringe-width 10)
-  (setq window-divider-default-bottom-width 4)
-  (setq window-divider-default-right-width 4)
-  (window-divider-mode 1)
+   ;; show the positions numbers and fringe
+   (setq column-number-mode t)
+   (global-hl-line-mode 0)
+  ;;(setq switch-to-buffer-preserve-window-point nil)
+   (setq display-line-numbers-grow-only t)
+   (setq display-line-numbers-width-start t)
+   (add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
+   (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+   (setq left-fringe-width 10)
 
-  ;; TODO: check because this function has problem whem jump to total number of digits
-  ;; e.g. when the buffer goes to 100 to 99 (erase one line) or the oposite.
-  (defun my-update-line-number-width ()
-    "Adjust the `display-line-numbers-width` to the max rows in buffer."
-    (setq-local display-line-numbers-width
-                (max 2 (length (number-to-string (line-number-at-pos (point-max)))))))
+   ;; divider for the windows 
+   (setq window-divider-default-bottom-width 4)
+   (setq window-divider-default-right-width 4)
+   (window-divider-mode 1)
 
-  (add-hook 'find-file-hook #'my-update-line-number-width)
-  (add-hook 'after-change-major-mode-hook #'my-update-line-number-width)
-  (add-hook 'after-save-hook #'my-update-line-number-width)
+   ;; scroll of window
+   (scroll-bar-mode -1)
+   (setq scroll-step 1)
+   (setq scroll-margin 0)
+   (setq scroll-conservatively 101)
+   (setq next-screen-context-lines 0)
 
-  ;; scroll of window
-  (scroll-bar-mode -1)
-  (setq scroll-step 1)
-  (setq scroll-conservatively 10000)
+   ;; Use "y or n" instead of "yes or no" and better message of scratch buffer
+   (fset 'yes-or-no-p 'y-or-n-p)
+   (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...")
 
-  (setq ring-bell-function 'ignore)
-  ;;(setq inhibit-startup-message t)
-  ;;(setq initial-scratch-message "")
+   ;; backups and auto save
+   (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
+   (setq make-backup-files t)
+   (setq auto-save-default t)
 
-  ;; Use "y or n" instead of "yes or no"
-  (fset 'yes-or-no-p 'y-or-n-p)
+   ;; highlight cursor
+   (setq visible-cursor nil)
 
-  ;; backups and auto save
-  (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
-  (setq make-backup-files t)
-  (setq auto-save-default t)
+   ;; Use spaces instead of tabs
+   (setq-default indent-tabs-mode nil)
+   (setq-default tab-width 4)
 
-  ;; highlight cursor
-  (setq visible-cursor nil)
+   ;; window split
+   (setq split-width-threshold 120)
+   (setq split-height-threshold nil)
 
-  ;; Melhora o comportamento do buffer (mais preditivo ao navegar entre buffers)
-  ;;(setq switch-to-buffer-preserve-window-point 'already-displayed)
+   ;; automatic files reload
+   (global-auto-revert-mode 1)
+   ;;(setq echo-keystrokes 0.5)
 
-  ;; Use spaces instead of tabs
-  (setq-default indent-tabs-mode nil)
-  (setq-default tab-width 4)
+   ;; allow to delete the current selected region
+   (delete-selection-mode 1)
 
-  ;; window split
-  (setq split-width-threshold 120)
-  (setq split-height-threshold nil)
-
-  ;; automatic files reload
-  (global-auto-revert-mode 1)
-  ;;(setq echo-keystrokes 0.5)
-
-  ;; allow to delete the current selected region
-  (delete-selection-mode 1)
-
+   ;; unset the suspend-frame
+   (global-unset-key (kbd "C-z"))
+   (global-unset-key (kbd "C-x C-z"))
 #+end_src
 
 * Straight
-
 #+begin_src emacs-lisp  
   ;; define the straight.el
   (defvar bootstrap-version)
@@ -93,7 +87,6 @@
   #+end_src
 
 * Improve general aspect 
-  
   #+begin_src emacs-lisp
     (defvar my-cursor-default-color "magenta"
       "Default color for the cursor.")
@@ -175,7 +168,6 @@
     #+end_src
 
 * Cursor aspect
-    
     #+begin_src emacs-lisp
       ;; FIX: highlight colors are no being showed for parentesis-like chars
       ;; but when enter M-x menu it shows fine, investigate it.
@@ -201,7 +193,6 @@
       #+end_src
 
 * Navigation experience
-      
       #+begin_src emacs-lisp
       ;; configure the to jump with avy
       (use-package avy
@@ -285,7 +276,6 @@
 #+end_src
 
 * Search and replace system
-
 #+begin_src emacs-lisp
   ;; useful because projectile depends on it
   (use-package rg)
@@ -338,7 +328,6 @@
   #+end_src
 
 * Advisor system
-
   #+begin_src emacs-lisp
   (use-package helpful
     :bind
@@ -397,135 +386,149 @@
 #+end_src
 
 * Project management
-
 #+begin_src emacs-lisp
-        ;; project management
-        (use-package projectile
+          ;; project management
+          (use-package projectile
+            :config
+            (projectile-mode +1)
+            (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
+            (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
+            (setq projectile-generic-command "rg --files --hidden")
+          ;;(add-hook 'project-find-functions #'project-projectile)
+    
+          ;; use consult to help projectile experience
+          (use-package consult-projectile
+            :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+
+          ;; perspective to have a workspace-like features
+          (use-package perspective
+            :straight t
+            ;; :bind
+            ;; ("C-x C-b" . persp-list-buffers)
+            :custom
+            (persp-mode-prefix-key (kbd "C-c p"))
+            :init
+            (persp-mode))
+
+          (use-package magit
+            :bind (("C-x g" . magit-status))
+            :config
+            (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
+
+      (use-package treemacs
+          :ensure t
+          :defer t
           :config
-          (projectile-mode 1)
-          (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
-          (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-        (setq projectile-generic-command "rg --files --hidden")
+          (treemacs-follow-mode t)
+          (setq treemacs-theme 'icons)
+          (setq treemacs-position 'left)
+          (setq treemacs-width 40)
+          (setq treemacs-indentation 2)
+          (setq treemacs-show-hidden-files t)
+          (setq treemacs-show-workspace-sidebar t)
+          (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))
+          (treemacs-resize-icons 15)
+            :bind
+          ("C-x t t" . treemacs)
+          ("C-x t d" . treemacs-select-directory)
+          ("C-x t p" . treemacs-projectile)
+          ("C-x t f" . treemacs-find-file))
 
-        ;; use consult to help projectile experience
-        (use-package consult-projectile
-          :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
+        (use-package treemacs-projectile
+          :after (treemacs projectile)
+          :ensure t)
 
-        ;; perspective to have a workspace-like features
-        (use-package perspective
+        (use-package treemacs-icons-dired
+          :hook (dired-mode . treemacs-icons-dired-enable-once)
+          :ensure t)
+
+        ;; configs of Dired
+        (setq dired-kill-when-opening-new-dired-buffer t)
+        (setq global-auto-revert-non-file-buffers t)
+        (setq auto-revert-verbose nil)
+        (setq ls-lisp-ignore-case t)
+        (setq ls-lisp-dirs-first t)
+        (setq dired-listing-switches "-Alh --group-directories-first --sort=version")
+        (add-hook 'dired-mode-hook 'auto-revert-mode)
+        (add-hook 'dired-mode-hook 'hl-line-mode)
+        (with-eval-after-load 'dired
+          (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
+
+        ;; add colors to Dired
+        (use-package diredfl
+          :hook (dired-mode . diredfl-mode))
+
+      (use-package dired-filter
+      :after dired
+      :config
+      (define-key dired-mode-map (kbd "/ g") 'dired-filter-by-git-ignored)
+      (define-key dired-mode-map (kbd "/ i g") nil))
+
+    (use-package dired-subtree
+      :after dired
+      :config
+      (define-key dired-mode-map (kbd "<tab>") 'dired-subtree-toggle))
+
+    (use-package dired-narrow
+      :after dired
+      :config
+      (define-key dired-mode-map (kbd "/ N") 'dired-narrow)
+      (define-key dired-mode-map (kbd "/ R") 'dired-narrow-regexp)
+      (define-key dired-mode-map (kbd "/ F") 'dired-narrow-fuzzy))
+
+       ;; TODO: try and configure these dired hacks
+         ;; 
+     ;; (use-package dired-avfs)
+        ;; (use-package dired-collapse
+        ;;   :hook (dired-mode . dired-collapse-mode))
+        ;; (use-package dired-rainbow
+        ;;   :config
+        ;;   (dired-rainbow-define html "#8b0000" "\\.html?$")
+        ;;   (dired-rainbow-define media "#ff4500" "\\.mp3$|\\.mp4$|\\.avi$")
+        ;;   (dired-rainbow-define log "#ff1493" "\\.log$"))
+        ;; (use-package dired-open
+        ;;   :config
+        ;;   (setq dired-open-extensions '(("mp4" . "vlc")
+        ;;                                 ("mkv" . "vlc")
+        ;;                                 ("png" . "feh")
+        ;;                                 ("jpg" . "feh"))))
+
+        ;; load hydra to proper sort the files
+        (use-package dired-quick-sort)
+
+        ;; deal with todo list
+        (use-package hl-todo
           :straight t
-          ;; :bind
-          ;; ("C-x C-b" . persp-list-buffers)
-          :custom
-          (persp-mode-prefix-key (kbd "C-c p"))
-          :init
-          (persp-mode))
-
-        (use-package magit
-          :bind (("C-x g" . magit-status))
+          :hook (prog-mode . hl-todo-mode)
           :config
-          (setq magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
+          (setq hl-todo-highlight-punctuation ":"
+                hl-todo-keyword-faces
+                '(("TODO"   . "#FF4500")
+                  ("FIXME"  . "#FF0000")
+                  ("NOTE"   . "#1E90FF")
+                  ("HACK"   . "#8A2BE2")
+                  ("REVIEW" . "#FFD700"))))
 
-    (use-package treemacs
-        :ensure t
-        :defer t
-        :config
-        (treemacs-follow-mode t)
-        (setq treemacs-theme 'icons)
-        (setq treemacs-position 'left)
-        (setq treemacs-width 40)
-        (setq treemacs-indentation 2)
-        (setq treemacs-show-hidden-files t)
-        (setq treemacs-show-workspace-sidebar t)
-        (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))
-        (treemacs-resize-icons 15)
-          :bind
-        ("C-x t t" . treemacs)
-        ("C-x t d" . treemacs-select-directory)
-        ("C-x t p" . treemacs-projectile)
-        ("C-x t f" . treemacs-find-file))
-
-      (use-package treemacs-projectile
-        :after (treemacs projectile)
-        :ensure t)
-
-      (use-package treemacs-icons-dired
-        :hook (dired-mode . treemacs-icons-dired-enable-once)
-        :ensure t)
-
-      ;; configs of Dired
-      (setq dired-kill-when-opening-new-dired-buffer t)
-      (setq global-auto-revert-non-file-buffers t)
-      (setq auto-revert-verbose nil)
-      (setq ls-lisp-ignore-case t)
-      (setq ls-lisp-dirs-first t)
-      (setq dired-listing-switches "-Alh --group-directories-first --sort=version")
-      (add-hook 'dired-mode-hook 'auto-revert-mode)
-      (add-hook 'dired-mode-hook 'hl-line-mode)
-      (with-eval-after-load 'dired
-        (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
-
-      ;; add colors to Dired
-      (use-package diredfl
-        :hook (dired-mode . diredfl-mode))
-
-    (use-package dired-filter
-    :after dired
-    :config
-    (define-key dired-mode-map (kbd "/ g") 'dired-filter-by-git-ignored)
-    (define-key dired-mode-map (kbd "/ i g") nil))
-
-  (use-package dired-subtree
-    :after dired
-    :config
-    (define-key dired-mode-map (kbd "<tab>") 'dired-subtree-toggle))
-
-  (use-package dired-narrow
-    :after dired
-    :config
-    (define-key dired-mode-map (kbd "/ N") 'dired-narrow)
-    (define-key dired-mode-map (kbd "/ R") 'dired-narrow-regexp)
-    (define-key dired-mode-map (kbd "/ F") 'dired-narrow-fuzzy))
-
-     ;; TODO: try and configure these dired hacks
-       ;; 
-   ;; (use-package dired-avfs)
-      ;; (use-package dired-collapse
-      ;;   :hook (dired-mode . dired-collapse-mode))
-      ;; (use-package dired-rainbow
-      ;;   :config
-      ;;   (dired-rainbow-define html "#8b0000" "\\.html?$")
-      ;;   (dired-rainbow-define media "#ff4500" "\\.mp3$|\\.mp4$|\\.avi$")
-      ;;   (dired-rainbow-define log "#ff1493" "\\.log$"))
-      ;; (use-package dired-open
-      ;;   :config
-      ;;   (setq dired-open-extensions '(("mp4" . "vlc")
-      ;;                                 ("mkv" . "vlc")
-      ;;                                 ("png" . "feh")
-      ;;                                 ("jpg" . "feh"))))
-
-      ;; load hydra to proper sort the files
-      (use-package dired-quick-sort)
-
-      ;; deal with todo list
-      (use-package hl-todo
-        :straight t
-        :hook (prog-mode . hl-todo-mode)
-        :config
-        (setq hl-todo-highlight-punctuation ":"
-              hl-todo-keyword-faces
-              '(("TODO"   . "#FF4500")
-                ("FIXME"  . "#FF0000")
-                ("NOTE"   . "#1E90FF")
-                ("HACK"   . "#8A2BE2")
-                ("REVIEW" . "#FFD700"))))
-
-      (use-package consult-todo
-        :demand t
-        :config
-        (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
+        (use-package consult-todo
+          :demand t
+          :config
+          (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
 
   #+end_src
+
+* Terminal integration
+This instalation requires the lib
+- libtool-bin
+- cmake
+- libvterm
+  
+#+begin_src emacs-lisp
+  (use-package vterm
+  :ensure t
+  :config
+   (setq vterm-max-scrollback 10000)
+   (setq vterm-shell "/bin/fish"))
+#+end_src
 
 * ORG mode configs
 #+begin_src emacs-lisp
@@ -556,7 +559,6 @@
 #+end_src
 
 * Completition system
-
   #+begin_src emacs-lisp
     ;; completitions for the code and text
     (use-package corfu
@@ -605,7 +607,6 @@
 #+end_src
 
 * Checking systems
-
 #+begin_src emacs-lisp
   (use-package flycheck
     :init
@@ -617,90 +618,89 @@
 #+end_src
 
 * LSP system
-
 #+begin_src emacs-lisp
-    (defun my/setup-lsp-mode ()
-      "Basic setup for the lsp-mode."
-      (lsp-enable-which-key-integration)
-      (flycheck-mode 1)
-      ;;(flyspell-prog-mode)
-      ;;(yas-minor-mode-on)
-      (lsp-diagnostics-mode 1)
-      (lsp-completion-mode 1))
+      (defun my/setup-lsp-mode ()
+        "Basic setup for the lsp-mode."
+        (lsp-enable-which-key-integration)
+        ;;(flycheck-mode 1)
+        ;;(flyspell-prog-mode)
+        ;;(yas-minor-mode-on)
+        ;;(lsp-diagnostics-mode 1)
+        ;;(lsp-completion-mode 1)
+        )
 
-    (use-package lsp-mode
-      :init
-      (setq lsp-keymap-prefix "C-c l")
-      :commands (lsp lsp-deferred)
-      :config
-      (lsp-enable-which-key-integration t)
-      ;; (flycheck-mode 1)
-      ;; (flyspell-prog-mode)
-      ;; (yas-minor-mode-on)
-      ;; (lsp-diagnostics-mode 1)
-      ;; (lsp-completion-mode 1))
-      :custom
-      ;; (lsp-log-io nil)
-      ;; (lsp-print-performance nil)
-      ;; (lsp-report-if-no-buffer nil)
-      ;; (lsp-server-trace nil)
-      ;; (lsp-keep-workspace-alive nil)
-      (lsp-enable-snippet t)
-      ;; (lsp-auto-guess-root t)
-      ;; (lsp-restart 'iteractive)
-      ;; (lsp-auto-configure nil)
-      ;; (lsp-auto-execute-action nil)
-      ;; (lsp-eldoce-render-all nil)
-      (lsp-enable-completion-at-point t)
-      (lsp-enable-xref t)
-      (lsp-diagnostics-provider :flycheck)
-      ;; (lsp-enable-indentation t)
-      (lsp-enable-on-type-formatting nil)
-      (lsp-before-save-edits nil)
-      (lsp-enable-imenu t)
-      (lsp-imenu-show-container-name t)
-      (lsp-imenu-container-name-separator "//")
-      (lsp-imenu-sort-methods '(kind name))
-      (lsp-response-timeout 10)
-      (lsp-enable-file-watchers nil)
-      (lsp-headerline-breadcrumb-enable nil)
-      (lsp-semantic-highlighting t)
-      ;; (lsp-signature-auto-activate t)
-      ;; (lsp-signature-render-documentation nil)
-      (lsp-enable-text-document-color nil)
-      (lsp-completion-provider :capf)
-      (gc-cons-threshold 100000000)
-      (read-process-output-max (* 3 1024 1024)))
+      (use-package lsp-mode
+        :init
+        (setq lsp-keymap-prefix "C-c l")
+        :commands (lsp lsp-deferred)
+        :config
+        (lsp-enable-which-key-integration t)
+        (flycheck-mode 1)
+        ;; (flyspell-prog-mode)
+        ;; (yas-minor-mode-on)
+        (lsp-diagnostics-mode 1)
+        (lsp-completion-mode 1)
+        :custom
+        ;; (lsp-log-io nil)
+        ;; (lsp-print-performance nil)
+        ;; (lsp-report-if-no-buffer nil)
+        ;; (lsp-server-trace nil)
+        ;; (lsp-keep-workspace-alive nil)
+        (lsp-enable-snippet t)
+        ;; (lsp-auto-guess-root t)
+        ;; (lsp-restart 'iteractive)
+        ;; (lsp-auto-configure nil)
+        ;; (lsp-auto-execute-action nil)
+        ;; (lsp-eldoce-render-all nil)
+        (lsp-enable-completion-at-point t)
+        (lsp-enable-xref t)
+        (lsp-diagnostics-provider :flycheck)
+        ;; (lsp-enable-indentation t)
+        (lsp-enable-on-type-formatting nil)
+        (lsp-before-save-edits nil)
+        (lsp-enable-imenu t)
+        (lsp-imenu-show-container-name t)
+        (lsp-imenu-container-name-separator "//")
+        (lsp-imenu-sort-methods '(kind name))
+        (lsp-response-timeout 10)
+        (lsp-enable-file-watchers nil)
+        (lsp-headerline-breadcrumb-enable nil)
+        (lsp-semantic-highlighting t)
+        ;; (lsp-signature-auto-activate t)
+        ;; (lsp-signature-render-documentation nil)
+        (lsp-enable-text-document-color nil)
+        (lsp-completion-provider :capf)
+        (gc-cons-threshold 100000000)
+        (read-process-output-max (* 3 1024 1024)))
 
-    ;; Python external dependencies (for LSP):
-    ;; - python-lsp-server (pip install 'python-lsp-server[all]')
-    ;; - python-debugpy
-    (use-package python-mode
-      :hook (python-mode . lsp-deferred))
+      ;; Python external dependencies (for LSP):
+      ;; - python-lsp-server (pip install 'python-lsp-server[all]')
+      ;; - python-debugpy
+      (use-package python-mode
+        :hook (python-mode . lsp-deferred))
 
-    (use-package dap-mode
-      :after lsp-mode
-      :hook (python-mode . dap-mode)
-      :config
-      (require 'dap-python))
+      (use-package dap-mode
+        :after lsp-mode
+        :hook (python-mode . dap-mode)
+        :config
+        (require 'dap-python))
 
-    ;; configure the lsp-docker in order to run the LSP servers inside the containers
-    ;; and then do not need to install anything directly in my machine
-    ;; (use-package lsp-docker)
-    ;; (setq lsp-docker-client-configs
-    ;;       '((:server-id pylsp-docker ;; ID do servidor no Docker
-    ;;          :docker-image-id "emacslsp/lsp-docker-langservers" ;; Imagem Docker
-    ;;          :server-command "pylsp"))) ;; Comando para iniciar o pylsp
-    ;; (lsp-docker-init-clients
-    ;;  :path-mappings '(("/home/gabriel/Projects" . "/projects")) ;; Mapeamento de pastas
-    ;;  :client-packages lsp-docker-client-packages
-    ;;  :client-configs lsp-docker-client-configs)
+      ;; configure the lsp-docker in order to run the LSP servers inside the containers
+      ;; and then do not need to install anything directly in my machine
+      ;; (use-package lsp-docker)
+      ;; (setq lsp-docker-client-configs
+      ;;       '((:server-id pylsp-docker ;; ID do servidor no Docker
+      ;;          :docker-image-id "emacslsp/lsp-docker-langservers" ;; Imagem Docker
+      ;;          :server-command "pylsp"))) ;; Comando para iniciar o pylsp
+      ;; (lsp-docker-init-clients
+      ;;  :path-mappings '(("/home/gabriel/Projects" . "/projects")) ;; Mapeamento de pastas
+      ;;  :client-packages lsp-docker-client-packages
+      ;;  :client-configs lsp-docker-client-configs)
 
-    
+      
 #+end_src
 
 * Hydras
-
 #+begin_src emacs-lisp
     (use-package hydra)
     ;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
@@ -785,20 +785,11 @@
 #+end_src
 
 * General.el keybindings
-
 #+begin_src emacs-lisp
   (use-package general)
-
-    ;; TODO: create another general group for these (maybe)
-    ;;("a" consult-org-agenda)
-    ;;("h" consult-org-heading)
-    ;;("e" consult-compile-error)
-    ;;("c" consult-mode-command)
-    ;;("x" consult-history)
-
-
+  
   ;; TODO: create hydras for these functions
-  ;; identation
+  ;; identation/aligns
   ;; folding
   ;; moving between symbols
   ;; move line or region to line X or above/below line
@@ -822,7 +813,10 @@
     "e R" 'restart-emacs
     "e Q" 'save-buffers-kill-terminal
     "e g" 'magit
-
+    "e s" 'eshell
+    "e t" 'vterm
+    "e T" 'vterm-other-window
+    
     ;; ace jump in visible area of buffers
     "j" '(:ignore t :which-key "jump")
     "j c" 'avy-goto-char
@@ -848,12 +842,13 @@
     "g T p" 'consult-todo-project
     "g T a" 'consult-todo-all
     "g T d" 'consult-todo-dir
+    ;;("e" consult-compile-error)
+    ;;("h" consult-org-heading)
+    ;;("a" consult-org-agenda)
 
     ;; search and replace
     "s" '(:ignore t :which-key "search/replace")
     "s g" 'consult-ripgrep
-    ;; TODO: remove it and use ripgrep directly
-    ;;"s d" 'deadgrep
     "s r" 'anzu-query-replace
     "s R" 'anzu-query-replace-regexp
     "s b" 'my/anzu-replace-in-buffer
@@ -865,14 +860,14 @@
     "w s" 'hydra-window-scroll/body
     "w z" 'hydra-text-zoom/body
     "w c" 'pulsar-recenter-middle
-    "w o" 'other-window
-    "w d" 'delete-window
-    "w D" 'delete-other-windows
+    "w o" 'other-window         ;; move to other window
+    "w q" 'delete-window        ;; quit windows
+    "w Q" 'delete-other-windows ;; quit other windows
 
     ;; deal with files
     "f" '(:ignore t :which-key "files/dir")
     "f d" 'consult-dir
-    "f s" 'find-file
+    "f o" 'find-file     ;; open file
     "f f" 'consult-fd    ;; find file with fd
     "f F" 'consult-find
     "f r" 'consult-recent-file
@@ -882,21 +877,22 @@
     "b s" 'save-buffer
     "b b" 'switch-to-buffer
     "b B" 'consult-buffer
-    "b p" 'consult-project-buffer
     "b k" 'kill-buffer
     "b K" 'kill-this-buffer
 
     ;; manage keybindings for the project
     "p" '(:ignore t :which-key "project")
+    "p t" 'projectile-run-vterm
+    "p T" 'projectile-run-vterm-other-window
+    
+    ;; project management commands
     "p m" '(:ignore t :which-key "management")
     "p m t" 'treemacs          ;; directories in a sidebar
     "p m T" 'treemacs-projectile
     "p m d" 'projectile-dired
     "p m o" 'projectile-switch-open-project
     "p m O" 'consult-projectile-switch-project
-    ;; TODO: configure also the shell here ...
-    ;; "p t" 'projectile-vterm
-    ;; "p T" 'projectile-shell
+    
     ;; project workspaces (perspectives)
     "p w" '(:ignore t :which-key "workspaces")
     "p w c" 'persp-switch
@@ -906,22 +902,29 @@
     "p w l" 'persp-state-load
     "p w r" 'persp-state-restore
     "p w o" 'projectile-persp-switch-project
-    ;; projectile search and replace
+    
+    ;; project file and directory management
+    "p f" '(:ignore t :which-key "file/dir")
+    "p f d" 'consult-projectile-find-dir    
+    "p f o" 'consult-projectile-find-file
+    "p f r" 'consult-projectile-recentf
+    "p f t" 'projectile-find-test-file
+    
+    ;; project search and replace
     "p s" '(:ignore t :which-key "search")
-    "p s f" 'consult-projectile-find-file
-    "p s d" 'consult-projectile-find-dir
-    "p s t" 'projectile-find-test-file
     "p s y" 'projectile-find-references
     "p s g" 'projectile-ripgrep
     "p s r" 'projectile-replace
     "p s R" 'projectile-replace-regexp
+    
     ;; buffers in this project
     "p b" '(:ignore t :which-key "buffers")
     "p b s" 'projectile-save-project-buffers
     "p b b" 'consult-projectile-switch-to-buffer
     "p b r" 'consult-projectile-recentf
     "p b i" 'projectile-ibuffer
-    ;; execution commands
+    
+    ;; execution commands for project
     "p x" '(:ignore t :which-key "execute")
     "p x C" 'projectile-configure-project
     "p x c" 'projectile-compile-project
@@ -939,20 +942,20 @@
     "z" 'undo
     "Z" 'undo-redo
     "c" 'kill-ring-save ;; copy
+    "C" 'duplicate-line
     "x" 'kill-region ;; cut region
     "X" 'kill-whole-line
     "v" 'yank ;; paste
     "V" 'consult-yank-replace ;; consult available paste list
 
     ;; TODO: add entry for the visual mode (ryo)
-    ;; TODO: put the flycheck commands here
-
+    ;; TODO: put the flycheck commands here for "!" key
+    
     )
 
   #+end_src
 
 * Modal edition with Ryo
-  
   #+begin_src emacs-lisp
     ;; TODO: you must think better about it, maybe this could be just an hydra to do the movements and selections
     ;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)

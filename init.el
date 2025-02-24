@@ -1,65 +1,61 @@
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(setq inhibit-splash-screen t)
+;; ignore anoying default features of Emacs
+ (tool-bar-mode -1)
+ (menu-bar-mode -1)
+ (setq inhibit-splash-screen t)
+ (setq ring-bell-function 'ignore)
 
-;; show the positions and line highlith
-(setq column-number-mode t)
-(add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
-(global-hl-line-mode 0)
-(setq left-fringe-width 10)
-(setq window-divider-default-bottom-width 4)
-(setq window-divider-default-right-width 4)
-(window-divider-mode 1)
+ ;; show the positions numbers and fringe
+ (setq column-number-mode t)
+ (global-hl-line-mode 0)
+;;(setq switch-to-buffer-preserve-window-point nil)
+ (setq display-line-numbers-grow-only t)
+ (setq display-line-numbers-width-start t)
+ (add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
+ (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+ (setq left-fringe-width 10)
 
-;; TODO: check because this function has problem whem jump to total number of digits
-;; e.g. when the buffer goes to 100 to 99 (erase one line) or the oposite.
-(defun my-update-line-number-width ()
-  "Adjust the `display-line-numbers-width` to the max rows in buffer."
-  (setq-local display-line-numbers-width
-              (max 2 (length (number-to-string (line-number-at-pos (point-max)))))))
+ ;; divider for the windows 
+ (setq window-divider-default-bottom-width 4)
+ (setq window-divider-default-right-width 4)
+ (window-divider-mode 1)
 
-(add-hook 'find-file-hook #'my-update-line-number-width)
-(add-hook 'after-change-major-mode-hook #'my-update-line-number-width)
-(add-hook 'after-save-hook #'my-update-line-number-width)
+ ;; scroll of window
+ (scroll-bar-mode -1)
+ (setq scroll-step 1)
+ (setq scroll-margin 0)
+ (setq scroll-conservatively 101)
+ (setq next-screen-context-lines 0)
 
-;; scroll of window
-(scroll-bar-mode -1)
-(setq scroll-step 1)
-(setq scroll-conservatively 10000)
+ ;; Use "y or n" instead of "yes or no" and better message of scratch buffer
+ (fset 'yes-or-no-p 'y-or-n-p)
+ (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...")
 
-(setq ring-bell-function 'ignore)
-;;(setq inhibit-startup-message t)
-;;(setq initial-scratch-message "")
+ ;; backups and auto save
+ (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
+ (setq make-backup-files t)
+ (setq auto-save-default t)
 
-;; Use "y or n" instead of "yes or no"
-(fset 'yes-or-no-p 'y-or-n-p)
+ ;; highlight cursor
+ (setq visible-cursor nil)
 
-;; backups and auto save
-(setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
-(setq make-backup-files t)
-(setq auto-save-default t)
+ ;; Use spaces instead of tabs
+ (setq-default indent-tabs-mode nil)
+ (setq-default tab-width 4)
 
-;; highlight cursor
-(setq visible-cursor nil)
+ ;; window split
+ (setq split-width-threshold 120)
+ (setq split-height-threshold nil)
 
-;; Melhora o comportamento do buffer (mais preditivo ao navegar entre buffers)
-;;(setq switch-to-buffer-preserve-window-point 'already-displayed)
+ ;; automatic files reload
+ (global-auto-revert-mode 1)
+ ;;(setq echo-keystrokes 0.5)
 
-;; Use spaces instead of tabs
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
+ ;; allow to delete the current selected region
+ (delete-selection-mode 1)
 
-;; window split
-(setq split-width-threshold 120)
-(setq split-height-threshold nil)
-
-;; automatic files reload
-(global-auto-revert-mode 1)
-;;(setq echo-keystrokes 0.5)
-
-;; allow to delete the current selected region
-(delete-selection-mode 1)
+ ;; unset the suspend-frame
+ (global-unset-key (kbd "C-z"))
+ (global-unset-key (kbd "C-x C-z"))
 
 ;; define the straight.el
 (defvar bootstrap-version)
@@ -363,10 +359,11 @@
 ;; project management
       (use-package projectile
         :config
-        (projectile-mode 1)
+        (projectile-mode +1)
         (setq projectile-project-search-path '("~/Projects/" "~/Playground/"))
         (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-      (setq projectile-generic-command "rg --files --hidden")
+        (setq projectile-generic-command "rg --files --hidden")
+      ;;(add-hook 'project-find-functions #'project-projectile)
 
       ;; use consult to help projectile experience
       (use-package consult-projectile
@@ -486,19 +483,23 @@
       :config
       (setq consult-todo-keywords '("TODO" "FIXME" "NOTE" "HACK" "REVIEW")))
 
-;; TODO: configure the emacs lisp here...
+(use-package vterm
+:ensure t
+:config
+ (setq vterm-max-scrollback 10000)
+ (setq vterm-shell "/bin/fish"))
+
 (use-package org
   :ensure t
   :pin gnu
   :config
   (setq org-startup-indented t         
-        ;org-hide-leading-stars t       ;; Oculta os asteriscos iniciais
+        org-hide-leading-stars t
         org-ellipsis " ▼ "
         org-src-fontify-natively t
-        
+
         ; org-log-done 'time
         org-log-into-drawer t)
-
   (setq org-directory "~/Documents/notes")         
   (setq org-agenda-files '("~/Documents/notes/agenda.org")))
 
@@ -507,6 +508,7 @@
   :custom
   (org-superstar-headline-bullets-list '("⬘ " "⬗ " "⬙ " "⬖ " "●" "●" "●" "●")))
 
+;; just let the package auto tangle my modifications
 (use-package org-auto-tangle
   :hook (org-mode . org-auto-tangle-mode)
   :config
@@ -568,11 +570,12 @@
 (defun my/setup-lsp-mode ()
   "Basic setup for the lsp-mode."
   (lsp-enable-which-key-integration)
-  (flycheck-mode 1)
+  ;;(flycheck-mode 1)
   ;;(flyspell-prog-mode)
   ;;(yas-minor-mode-on)
-  (lsp-diagnostics-mode 1)
-  (lsp-completion-mode 1))
+  ;;(lsp-diagnostics-mode 1)
+  ;;(lsp-completion-mode 1)
+  )
 
 (use-package lsp-mode
   :init
@@ -580,11 +583,11 @@
   :commands (lsp lsp-deferred)
   :config
   (lsp-enable-which-key-integration t)
-  ;; (flycheck-mode 1)
+  (flycheck-mode 1)
   ;; (flyspell-prog-mode)
   ;; (yas-minor-mode-on)
-  ;; (lsp-diagnostics-mode 1)
-  ;; (lsp-completion-mode 1))
+  (lsp-diagnostics-mode 1)
+  (lsp-completion-mode 1)
   :custom
   ;; (lsp-log-io nil)
   ;; (lsp-print-performance nil)
@@ -724,16 +727,8 @@
 
 (use-package general)
 
-  ;; TODO: create another general group for these (maybe)
-  ;;("a" consult-org-agenda)
-  ;;("h" consult-org-heading)
-  ;;("e" consult-compile-error)
-  ;;("c" consult-mode-command)
-  ;;("x" consult-history)
-
-
 ;; TODO: create hydras for these functions
-;; identation
+;; identation/aligns
 ;; folding
 ;; moving between symbols
 ;; move line or region to line X or above/below line
@@ -757,6 +752,9 @@
   "e R" 'restart-emacs
   "e Q" 'save-buffers-kill-terminal
   "e g" 'magit
+  "e s" 'eshell
+  "e t" 'vterm
+  "e T" 'vterm-other-window
 
   ;; ace jump in visible area of buffers
   "j" '(:ignore t :which-key "jump")
@@ -783,12 +781,13 @@
   "g T p" 'consult-todo-project
   "g T a" 'consult-todo-all
   "g T d" 'consult-todo-dir
+  ;;("e" consult-compile-error)
+  ;;("h" consult-org-heading)
+  ;;("a" consult-org-agenda)
 
   ;; search and replace
   "s" '(:ignore t :which-key "search/replace")
   "s g" 'consult-ripgrep
-  ;; TODO: remove it and use ripgrep directly
-  ;;"s d" 'deadgrep
   "s r" 'anzu-query-replace
   "s R" 'anzu-query-replace-regexp
   "s b" 'my/anzu-replace-in-buffer
@@ -800,14 +799,14 @@
   "w s" 'hydra-window-scroll/body
   "w z" 'hydra-text-zoom/body
   "w c" 'pulsar-recenter-middle
-  "w o" 'other-window
-  "w d" 'delete-window
-  "w D" 'delete-other-windows
+  "w o" 'other-window         ;; move to other window
+  "w q" 'delete-window        ;; quit windows
+  "w Q" 'delete-other-windows ;; quit other windows
 
   ;; deal with files
   "f" '(:ignore t :which-key "files/dir")
   "f d" 'consult-dir
-  "f s" 'find-file
+  "f o" 'find-file     ;; open file
   "f f" 'consult-fd    ;; find file with fd
   "f F" 'consult-find
   "f r" 'consult-recent-file
@@ -817,21 +816,22 @@
   "b s" 'save-buffer
   "b b" 'switch-to-buffer
   "b B" 'consult-buffer
-  "b p" 'consult-project-buffer
   "b k" 'kill-buffer
   "b K" 'kill-this-buffer
 
   ;; manage keybindings for the project
   "p" '(:ignore t :which-key "project")
+  "p t" 'projectile-run-vterm
+  "p T" 'projectile-run-vterm-other-window
+
+  ;; project management commands
   "p m" '(:ignore t :which-key "management")
   "p m t" 'treemacs          ;; directories in a sidebar
   "p m T" 'treemacs-projectile
   "p m d" 'projectile-dired
   "p m o" 'projectile-switch-open-project
   "p m O" 'consult-projectile-switch-project
-  ;; TODO: configure also the shell here ...
-  ;; "p t" 'projectile-vterm
-  ;; "p T" 'projectile-shell
+
   ;; project workspaces (perspectives)
   "p w" '(:ignore t :which-key "workspaces")
   "p w c" 'persp-switch
@@ -841,22 +841,29 @@
   "p w l" 'persp-state-load
   "p w r" 'persp-state-restore
   "p w o" 'projectile-persp-switch-project
-  ;; projectile search and replace
+
+  ;; project file and directory management
+  "p f" '(:ignore t :which-key "file/dir")
+  "p f d" 'consult-projectile-find-dir    
+  "p f o" 'consult-projectile-find-file
+  "p f r" 'consult-projectile-recentf
+  "p f t" 'projectile-find-test-file
+
+  ;; project search and replace
   "p s" '(:ignore t :which-key "search")
-  "p s f" 'consult-projectile-find-file
-  "p s d" 'consult-projectile-find-dir
-  "p s t" 'projectile-find-test-file
   "p s y" 'projectile-find-references
   "p s g" 'projectile-ripgrep
   "p s r" 'projectile-replace
   "p s R" 'projectile-replace-regexp
+
   ;; buffers in this project
   "p b" '(:ignore t :which-key "buffers")
   "p b s" 'projectile-save-project-buffers
   "p b b" 'consult-projectile-switch-to-buffer
   "p b r" 'consult-projectile-recentf
   "p b i" 'projectile-ibuffer
-  ;; execution commands
+
+  ;; execution commands for project
   "p x" '(:ignore t :which-key "execute")
   "p x C" 'projectile-configure-project
   "p x c" 'projectile-compile-project
@@ -874,13 +881,14 @@
   "z" 'undo
   "Z" 'undo-redo
   "c" 'kill-ring-save ;; copy
+  "C" 'duplicate-line
   "x" 'kill-region ;; cut region
   "X" 'kill-whole-line
   "v" 'yank ;; paste
   "V" 'consult-yank-replace ;; consult available paste list
 
   ;; TODO: add entry for the visual mode (ryo)
-  ;; TODO: put the flycheck commands here
+  ;; TODO: put the flycheck commands here for "!" key
 
   )
 
