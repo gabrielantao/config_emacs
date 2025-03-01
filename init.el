@@ -11,7 +11,21 @@
  (setq display-line-numbers-grow-only t)
  (setq display-line-numbers-width-start t)
  (add-hook 'prog-mode-hook (lambda () (setq truncate-lines t)))
+ (add-hook 'conf-mode-hook (lambda () (setq truncate-lines t)))
+ (add-hook 'yaml-mode-hook (lambda () (setq truncate-lines t)))
+ ;; (defun my-no-wrap-for-config-files ()
+ ;;   "Desativa quebras de linha automáticas para arquivos TOML, JSON e YAML."
+ ;;   (when (derived-mode-p 'json-mode 'yaml-mode 'toml-mode)
+ ;;     (setq truncate-lines t)
+ ;;     (auto-fill-mode -1)))
+
  (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+ (add-hook 'conf-mode-hook 'display-line-numbers-mode)
+ (add-hook 'yaml-mode-hook 'display-line-numbers-mode)
+ ;; (add-hook 'json-mode-hook #'my-no-wrap-for-config-files)
+ ;; (add-hook 'yaml-mode-hook #'my-no-wrap-for-config-files)
+ ;; (add-hook 'toml-mode-hook #'my-no-wrap-for-config-files)
+
  (setq left-fringe-width 10)
 
  ;; divider for the windows 
@@ -28,7 +42,7 @@
 
  ;; Use "y or n" instead of "yes or no" and better message of scratch buffer
  (fset 'yes-or-no-p 'y-or-n-p)
- (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...")
+ (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...\n\n")
 
  ;; backups and auto save
  (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
@@ -93,18 +107,18 @@
 (setq-default line-spacing 0.3)
 
 ;; configure better identation bars
-;; TODO: configure this package
-;; (use-package indent-bars
-;;   :config
-;;   (setq
-;;    indent-bars-color '(highlight :face-bg t :blend 0.2)
-;;    indent-bars-pattern "."
-;;    indent-bars-width-frac 0.1
-;;    indent-bars-pad-frac 0.1
-;;    indent-bars-zigzag nil
-;;    indent-bars-color-by-depth nil
-;;    indent-bars-highlight-current-depth nil
-;;    indent-bars-display-on-blank-lines nil))
+;; TODO: configure this package, it is not showing anything
+(use-package indent-bars)
+  ;; :config
+  ;; (setq
+  ;;  indent-bars-color '(highlight :face-bg t :blend 0.2)
+  ;;  indent-bars-pattern "."
+  ;;  indent-bars-width-frac 0.1
+  ;;  indent-bars-pad-frac 0.1
+  ;;  indent-bars-zigzag nil
+  ;;  indent-bars-color-by-depth nil
+  ;;  indent-bars-highlight-current-depth nil
+  ;;  indent-bars-display-on-blank-lines nil))
 
 
 ;; improve the start dashboard
@@ -151,7 +165,12 @@
 (use-package doom-modeline
   :init (doom-modeline-mode 1)
   :custom
-  (doom-modeline-height 20))
+  (doom-modeline-height 20)
+  (doom-modeline-buffer-encoding nil))
+
+;; improve the aspect of compilation mode when show ansi colors
+(use-package ansi-color
+  :hook (compilation-filter . ansi-color-compilation-filter))
 
 ;; FIX: highlight colors are no being showed for parentesis-like chars
 ;; but when enter M-x menu it shows fine, investigate it.
@@ -199,6 +218,9 @@
 (use-package ace-link
   :config
   (ace-link-setup-default))
+
+;; jump windows with ace window
+(use-package ace-window)
 
 ;; pulsar used to pulse the line when the cursor make (movements) like jumps
 (use-package pulsar
@@ -356,7 +378,10 @@
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 
-;; project management
+;; set dir-locals variables content always marked as safe
+(setq enable-local-variables :all)
+
+      ;; project management
       (use-package projectile
         :config
         (projectile-mode +1)
@@ -369,15 +394,11 @@
       (use-package consult-projectile
         :straight (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
 
+      ;; TODO: try again the perspective package in future
       ;; perspective to have a workspace-like features
-      (use-package perspective
-        :straight t
-        ;; :bind
-        ;; ("C-x C-b" . persp-list-buffers)
-        :custom
-        (persp-mode-prefix-key (kbd "C-c p"))
-        :init
-        (persp-mode))
+      ;; (use-package perspective
+      ;;   :init
+      ;;   (persp-mode))
 
       (use-package magit
         :bind (("C-x g" . magit-status))
@@ -394,17 +415,20 @@
       (setq treemacs-width 40)
       (setq treemacs-indentation 2)
       (setq treemacs-show-hidden-files t)
+      (setq treemacs-hide-dot-git-directory nil)
       (setq treemacs-show-workspace-sidebar t)
+      (setq treemacs-space-between-root-nodes nil)
+      (setq treemacs-move-files-by-mouse-dragging nil)
       (setq treemacs-persist-file (expand-file-name ".treemacs-workspaces" user-emacs-directory))
-      (treemacs-resize-icons 15)
-        :bind
-      ("C-x t t" . treemacs)
-      ("C-x t d" . treemacs-select-directory)
-      ("C-x t p" . treemacs-projectile)
-      ("C-x t f" . treemacs-find-file))
+      (treemacs-filewatch-mode t)
+      (treemacs-resize-icons 15))
 
     (use-package treemacs-projectile
       :after (treemacs projectile)
+      :ensure t)
+
+    (use-package treemacs-magit
+      :after (treemacs magit)
       :ensure t)
 
     (use-package treemacs-icons-dired
@@ -418,14 +442,24 @@
     (setq ls-lisp-ignore-case t)
     (setq ls-lisp-dirs-first t)
     (setq dired-listing-switches "-Alh --group-directories-first --sort=version")
+    ;;(defun my/dired-hide-cursor ()
+    ;;"Hide the cursor for the dired mode."
+    ;; (setq-local cursor-type nil))
+    ;;(add-hook 'dired-mode-hook #'my/dired-hide-cursor)
     (add-hook 'dired-mode-hook 'auto-revert-mode)
     (add-hook 'dired-mode-hook 'hl-line-mode)
     (with-eval-after-load 'dired
-      (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory))
+      (define-key dired-mode-map (kbd "<backspace>") 'dired-up-directory)
+      (define-key dired-mode-map (kbd "SPC") 'dired-create-empty-file))
 
     ;; add colors to Dired
     (use-package diredfl
       :hook (dired-mode . diredfl-mode))
+
+    (use-package dired-git-info)
+    (setq dgi-auto-hide-details-p nil)
+    (add-hook 'dired-after-readin-hook 'dired-git-info-auto-enable)
+    ;;(setq dired-git-info-mode t)
 
   (use-package dired-filter
   :after dired
@@ -493,16 +527,17 @@
   :ensure t
   :pin gnu
   :config
-  (setq org-startup-indented t         
+  (setq org-startup-indented t
+        org-startup-folded t
         org-hide-leading-stars t
         org-ellipsis " ▼ "
         org-src-fontify-natively t
-
         ; org-log-done 'time
         org-log-into-drawer t)
   (setq org-directory "~/Documents/notes")         
   (setq org-agenda-files '("~/Documents/notes/agenda.org")))
 
+;; configure better heading marks
 (use-package org-superstar
   :hook (org-mode . org-superstar-mode)
   :custom
@@ -513,6 +548,16 @@
   :hook (org-mode . org-auto-tangle-mode)
   :config
   (setq org-auto-tangle-default t))
+
+;; always start the editor with a org-mode buffer
+(defun my-create-org-scratch-buffer ()
+ "Create and show a org notes buffer."
+ (let ((buf (get-buffer-create "notes-org")))
+   (with-current-buffer buf
+    (org-mode)
+    (insert "#+TITLE !!! ORG NOTES BUFFER !!!\n\n"))))
+
+ (add-hook 'emacs-startup-hook #'my-create-org-scratch-buffer)
 
 ;; completitions for the code and text
 (use-package corfu
@@ -560,170 +605,257 @@
   :after (consult yasnippet))
 
 (use-package flycheck
-  :init
-  (global-flycheck-mode)
-  :config
-  (setq flycheck-highlighting-mode 'symbols))
+  :custom
+  (flycheck-global-modes t) 
+  (flycheck-highlighting-mode 'symbols)
+  ;; do not flood the minibuffer with alerts
+  (flycheck-auto-display-errors-after-checking nil)
+  (flycheck-display-errors-function #'ignore)
+  (flycheck-display-errors-delay 5))
+
+ (use-package consult-flycheck)
+
+;; remove the global keymap 
+(with-eval-after-load 'flycheck
+  (define-key flycheck-mode-map (kbd "C-c !") nil))
+
+;; let the lsp-ui work together with flycheck to show the erros inline
+(use-package lsp-ui
+  :hook (lsp-mode . lsp-ui-mode)
+  :custom
+  (lsp-ui-sideline-enable t)
+  (lsp-ui-sideline-show-diagnostics t)
+  (lsp-ui-sideline-show-hover nil)
+  (lsp-ui-sideline-show-code-actions nil)
+  (lsp-ui-sideline-update-mode 'point) ;; could also be line
+  (lsp-ui-sideline-delay 1)
+  (lsp-ui-sideline-diagnostic-max-lines 1)
+  (lsp-ui-peek-enable nil)
+  (lsp-ui-doc-enable nil))
 
 ;; TODO: add here the flyspell too
 
 (defun my/setup-lsp-mode ()
-  "Basic setup for the lsp-mode."
-  (lsp-enable-which-key-integration)
-  ;;(flycheck-mode 1)
-  ;;(flyspell-prog-mode)
-  ;;(yas-minor-mode-on)
-  ;;(lsp-diagnostics-mode 1)
-  ;;(lsp-completion-mode 1)
-  )
+    "Basic setup for the lsp-mode."
+    (lsp-enable-which-key-integration)
+    ;;(flycheck-mode 1)
+    ;;(flyspell-prog-mode)
+    ;;(yas-minor-mode-on)
+    ;;(lsp-diagnostics-mode 1)
+    ;;(lsp-completion-mode 1)
+    )
 
-(use-package lsp-mode
-  :init
-  (setq lsp-keymap-prefix "C-c l")
-  :commands (lsp lsp-deferred)
+  (use-package lsp-mode
+    :init
+    (setq lsp-keymap-prefix "C-c l")
+    :commands (lsp lsp-deferred)
+    :config
+    (lsp-enable-which-key-integration t)
+    (flycheck-mode 1)
+    ;; (flyspell-prog-mode)
+    ;; (yas-minor-mode-on)
+    (lsp-diagnostics-mode 1)
+    (lsp-completion-mode 1)
+    :custom
+    (lsp-modeline-code-actions-enable nil)
+    (lsp-modeline-diagnostics-enable nil)
+    ;; (lsp-log-io nil)
+    ;; (lsp-print-performance nil)
+    ;; (lsp-report-if-no-buffer nil)
+    ;; (lsp-server-trace nil)
+    ;; (lsp-keep-workspace-alive nil)
+    (lsp-enable-snippet t)
+    ;; (lsp-auto-guess-root t)
+    ;; (lsp-restart 'iteractive)
+    ;; (lsp-auto-configure nil)
+    ;; (lsp-auto-execute-action nil)
+    ;; (lsp-eldoce-render-all nil)
+    (lsp-enable-completion-at-point t)
+    (lsp-enable-xref t)
+    (lsp-diagnostics-provider :flycheck)
+    ;; (lsp-enable-indentation t)
+    (lsp-enable-on-type-formatting nil)
+    (lsp-before-save-edits nil)
+    (lsp-enable-imenu t)
+    (lsp-imenu-show-container-name t)
+    (lsp-imenu-container-name-separator "//")
+    (lsp-imenu-sort-methods '(kind name))
+    (lsp-response-timeout 10)
+    (lsp-enable-file-watchers nil)
+    (lsp-headerline-breadcrumb-enable nil)
+    (lsp-semantic-highlighting t)
+    ;; (lsp-signature-auto-activate t)
+    ;; (lsp-signature-render-documentation nil)
+    (lsp-enable-text-document-color nil)
+    (lsp-completion-provider :none)
+    (gc-cons-threshold 100000000)
+    (read-process-output-max (* 3 1024 1024)))
+  (add-hook 'before-save-hook #'lsp-format-buffer)
+
+  ;;(use-package consult-lsp)
+
+  ;; Python external dependencies (for LSP):
+  ;; - python-lsp-server (pip install 'python-lsp-server[all]')
+  ;; - python-debugpy
+  (use-package python-mode
+    :hook (python-mode . lsp-deferred))
+
+  (use-package python-pytest
+    :custom
+    (python-pytest-confirm t))
+
+  ;; it needs dependency of taplo
+  (use-package toml-mode
+    :hook (toml-mode . lsp-deferred))
+
+  (use-package yaml-mode
+    ;; :mode "\\.ya?ml\\'"
+    :hook (yaml-mode . lsp-deferred))
+
+  ;; it needs dependency of fortls
+  (use-package fortran
+    :straight nil
+    :hook (fortran-mode . lsp-deferred))
+  (use-package f90
+   :straight nil
+   :hook (f90-mode . lsp-deferred))
+
+
+  (use-package dap-mode
+    :after lsp-mode
+    :hook (python-mode . dap-mode)
+    :config
+    (require 'dap-python))
+
+  ;; configure the lsp-docker in order to run the LSP servers inside the containers
+  ;; and then do not need to install anything directly in my machine
+  ;; (use-package lsp-docker)
+  ;; (setq lsp-docker-client-configs
+  ;;       '((:server-id pylsp-docker ;; ID do servidor no Docker
+  ;;          :docker-image-id "emacslsp/lsp-docker-langservers" ;; Imagem Docker
+  ;;          :server-command "pylsp"))) ;; Comando para iniciar o pylsp
+  ;; (lsp-docker-init-clients
+  ;;  :path-mappings '(("/home/gabriel/Projects" . "/projects")) ;; Mapeamento de pastas
+  ;;  :client-packages lsp-docker-client-packages
+  ;;  :client-configs lsp-docker-client-configs)
+
+;; use treemacs to help with the code data
+(use-package lsp-treemacs
+  :after (lsp-mode treemacs)
   :config
-  (lsp-enable-which-key-integration t)
-  (flycheck-mode 1)
-  ;; (flyspell-prog-mode)
-  ;; (yas-minor-mode-on)
-  (lsp-diagnostics-mode 1)
-  (lsp-completion-mode 1)
-  :custom
-  ;; (lsp-log-io nil)
-  ;; (lsp-print-performance nil)
-  ;; (lsp-report-if-no-buffer nil)
-  ;; (lsp-server-trace nil)
-  ;; (lsp-keep-workspace-alive nil)
-  (lsp-enable-snippet t)
-  ;; (lsp-auto-guess-root t)
-  ;; (lsp-restart 'iteractive)
-  ;; (lsp-auto-configure nil)
-  ;; (lsp-auto-execute-action nil)
-  ;; (lsp-eldoce-render-all nil)
-  (lsp-enable-completion-at-point t)
-  (lsp-enable-xref t)
-  (lsp-diagnostics-provider :flycheck)
-  ;; (lsp-enable-indentation t)
-  (lsp-enable-on-type-formatting nil)
-  (lsp-before-save-edits nil)
-  (lsp-enable-imenu t)
-  (lsp-imenu-show-container-name t)
-  (lsp-imenu-container-name-separator "//")
-  (lsp-imenu-sort-methods '(kind name))
-  (lsp-response-timeout 10)
-  (lsp-enable-file-watchers nil)
-  (lsp-headerline-breadcrumb-enable nil)
-  (lsp-semantic-highlighting t)
-  ;; (lsp-signature-auto-activate t)
-  ;; (lsp-signature-render-documentation nil)
-  (lsp-enable-text-document-color nil)
-  (lsp-completion-provider :capf)
-  (gc-cons-threshold 100000000)
-  (read-process-output-max (* 3 1024 1024)))
-
-;; Python external dependencies (for LSP):
-;; - python-lsp-server (pip install 'python-lsp-server[all]')
-;; - python-debugpy
-(use-package python-mode
-  :hook (python-mode . lsp-deferred))
-
-(use-package dap-mode
-  :after lsp-mode
-  :hook (python-mode . dap-mode)
-  :config
-  (require 'dap-python))
-
-;; configure the lsp-docker in order to run the LSP servers inside the containers
-;; and then do not need to install anything directly in my machine
-;; (use-package lsp-docker)
-;; (setq lsp-docker-client-configs
-;;       '((:server-id pylsp-docker ;; ID do servidor no Docker
-;;          :docker-image-id "emacslsp/lsp-docker-langservers" ;; Imagem Docker
-;;          :server-command "pylsp"))) ;; Comando para iniciar o pylsp
-;; (lsp-docker-init-clients
-;;  :path-mappings '(("/home/gabriel/Projects" . "/projects")) ;; Mapeamento de pastas
-;;  :client-packages lsp-docker-client-packages
-;;  :client-configs lsp-docker-client-configs)
+  (lsp-treemacs-sync-mode 1))
 
 (use-package hydra)
-;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
+  ;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
 
-;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
-;; TODO: review if need these lambda interactive here
-;; (defhydra hydra-sp-move (:exit nil)
-;;   "Navegate with smartparens"
-;;   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
-;;   ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
-;;   ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
-;;   ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
-;;   ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
-;;   ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
-;;   ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
-;;   ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
-;;   ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
-;;   ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
-;;   ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
-;;   ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
-;;   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
-;;   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
-;;   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
-;;   ("q" nil "quit" :exit t :color blue))
-;; ;;(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+  
+  ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
+  ;; TODO: review if need these lambda interactive here
+  ;; (defhydra hydra-sp-move (:exit nil)
+  ;;   "Navegate with smartparens"
+  ;;   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
+  ;;   ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
+  ;;   ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
+  ;;   ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
+  ;;   ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
+  ;;   ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
+  ;;   ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
+  ;;   ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
+  ;;   ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
+  ;;   ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
+  ;;   ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
+  ;;   ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
+  ;;   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
+  ;;   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
+  ;;   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
+  ;;   ("q" nil "quit" :exit t :color blue))
+  ;; ;;(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+
+(defhydra hydra-text-navigation (:color pink :columns 4)
+  "Text Navigation & Editing"
+  ;; move one position
+  ("j" backward-char "← Char")
+  ("l" forward-char "→ Char")
+  ("k" next-line "↓ Line")
+  ("i" previous-line "↑ Line")
+  ;; move jump-like
+  ("u" backward-word "← Word")
+  ("o" forward-word "→ Word")
+  ("U" sp-backward-symbol "← Symbol")
+  ("O" sp-forward-symbol "→ Symbol")
+  ("J" beginning-of-line "|← Line Start")
+  ("L" end-of-line "→| Line End")
+  ("I" beginning-of-buffer "↖ Buffer Start")
+  ("K" end-of-buffer "↘ Buffer End")
+  ;; selection
+  ("m" set-mark-command "Mark")
+  ;; ("M" <sub-hydra-selection>) ;; TODO: Adicionar sub-hydra para seleções avançadas
+  ;; base command section
+  ("-" pulsar-pulse-line "Pulse")
+  ("z" undo "Undo")
+  ("Z" undo-redo "Redo")
+  ;; Copy/Cut/Paste commands
+  ("c" kill-ring-save "Copy")
+  ("x" my-kill-region-or-line "Cut")
+  ("v" yank "Paste")
+  ("V" consult-yank-replace "Insert Copied")
+  ;; exit
+  ("q" nil "Exit" :exit t))
 
 
-(defhydra hydra-text-zoom (:color pink :timeout 4)
-  "Scale text font"
-  ("i" text-scale-increase "in")
-  ("k" text-scale-decrease "out")
-  ("q" nil "quit" :color blue))
-;;(global-set-key (kbd "C-c a") 'hydra-text-zoom/body)
+  (defhydra hydra-text-zoom (:color pink :timeout 4)
+    "Scale text font"
+    ("i" text-scale-increase "in")
+    ("k" text-scale-decrease "out")
+    ("q" nil "quit" :color blue))
+  ;;(global-set-key (kbd "C-c a") 'hydra-text-zoom/body)
 
 
-(defhydra hydra-window-scroll (:hint nil :color red)
+  (defhydra hydra-window-scroll (:hint nil :color red)
+    "
+    Scrolling and Navigation:
+    [_j_] ← scroll left  [_l_] → scroll right
+    [_i_] ↑ scroll up    [_k_] ↓ scroll down
+    [_I_] ↑↑ page up     [_K_] ↓↓ page down
+    [_c_] - recenter
+    [_q_] quit
   "
-  Scrolling and Navigation:
-  [_j_] ← scroll left  [_l_] → scroll right
-  [_i_] ↑ scroll up    [_k_] ↓ scroll down
-  [_I_] ↑↑ page up     [_K_] ↓↓ page down
-  [_c_] - recenter
-  [_q_] quit
-"
-  ("l" scroll-left)
-  ("j" scroll-right)
-  ;; option: simple scroll with static point
-  ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
-  ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
-  ("i" my-pulsar-scroll-page-up-multi)
-  ("k" my-pulsar-scroll-page-down-multi)
-  ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
-  ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
-  ("c" pulsar-recenter-middle)
-  ("q" nil))
-;;(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
+    ("l" scroll-left)
+    ("j" scroll-right)
+    ;; option: simple scroll with static point
+    ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
+    ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
+    ("i" my-pulsar-scroll-page-up-multi)
+    ("k" my-pulsar-scroll-page-down-multi)
+    ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
+    ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
+    ("c" pulsar-recenter-middle)
+    ("q" nil))
+  ;;(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
 
 
-(defhydra hydra-window-move (:color pink :columns 4)
-  "Window navigation and manipulation"
-  ("j" windmove-left "← left")
-  ("l" windmove-right "→ right")
-  ("k" windmove-down "↓ down")
-  ("i" windmove-up "↑ up")
-  ("J" windmove-swap-states-left "←← swap left")
-  ("L" windmove-swap-states-right "→→ swap right")
-  ("K" windmove-swap-states-down "↓↓ swap down")
-  ("I" windmove-swap-states-up "↑↑ swap up")
-  ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
-  ("g" shrink-window-horizontally "→|← shrink horizontally")
-  ("y" enlarge-window "←|→ enlarge vertically")
-  ("h" shrink-window "→|← shrink vertically")
-  ("a" split-window-vertically "== split in rows")
-  ("s" split-window-horizontally "|| split in columns")
-  ("d" delete-window "delete window")
-  ("D" delete-other-windows "delete other windows")
-  ("o" other-window "other window")
-  ("c" pulsar-recenter-middle "center window")
-  ("q" nil "quit"))
-;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
+  (defhydra hydra-window-move (:color pink :columns 4)
+    "Window navigation and manipulation"
+    ("j" windmove-left "← left")
+    ("l" windmove-right "→ right")
+    ("k" windmove-down "↓ down")
+    ("i" windmove-up "↑ up")
+    ("J" windmove-swap-states-left "←← swap left")
+    ("L" windmove-swap-states-right "→→ swap right")
+    ("K" windmove-swap-states-down "↓↓ swap down")
+    ("I" windmove-swap-states-up "↑↑ swap up")
+    ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
+    ("g" shrink-window-horizontally "→|← shrink horizontally")
+    ("y" enlarge-window "←|→ enlarge vertically")
+    ("h" shrink-window "→|← shrink vertically")
+    ("a" split-window-vertically "== split in rows")
+    ("s" split-window-horizontally "|| split in columns")
+    ("d" delete-window "delete window")
+    ("D" delete-other-windows "delete other windows")
+    ("o" other-window "other window")
+    ("c" pulsar-recenter-middle "center window")
+    ("q" nil "quit"))
+  ;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
 
 (use-package general)
 
@@ -738,11 +870,37 @@
   (interactive)
   (insert "\\"))
 
+(defun my-kill-region-or-line ()
+"Kill a region, or cut whole line if there is not active region."
+(interactive)
+(if (use-region-p)
+    (kill-region (region-beginning) (region-end))
+  (kill-whole-line)))
+
+
+
 (general-create-definer my/leader-key
-  :keymaps 'override ;; Garante que o atalho funcione globalmente
-  :prefix "\\" ;; Defina a leader key como a contra barra
-  :global-prefix "C-\\") ;; Alternativa para teclados sem tecla "SPC"
+  :keymaps 'override
+  :prefix "\\"
+  :global-prefix "C-\\")
 (my/leader-key
+  ;; base text operations
+  "y" 'consult-yasnippet
+  "Y" 'yas-expand
+  "\\" 'my-insert-backslash
+  "-" 'pulsar-pulse-line
+  ";" 'comment-line
+  "z" 'undo
+  "Z" 'undo-redo
+  "c" 'kill-ring-save ;; copy
+  "C" 'duplicate-line
+  "x" 'my-kill-region-or-line ;; cut region or whole line
+  "X" 'kill-whole-line
+  "v" 'yank ;; paste
+  "V" 'consult-yank-replace ;; consult available paste list
+  "n" 'hydra-text-navigation/body
+  "?" 'general-describe-keybindings
+  
   ;; commands to execute
   "e" '(:ignore t :which-key "execute")
   "e x" 'execute-extended-command
@@ -751,11 +909,13 @@
   "e e" 'eval-buffer
   "e R" 'restart-emacs
   "e Q" 'save-buffers-kill-terminal
+  "e d" 'dired
   "e g" 'magit
-  "e s" 'eshell
-  "e t" 'vterm
-  "e T" 'vterm-other-window
-
+  "e t" 'vterm              ;; terminal shell
+  "e T" 'vterm-other-window ;; terminal shell other window
+  "e s" 'shell-command
+  "e S" 'async-shell-command
+  
   ;; ace jump in visible area of buffers
   "j" '(:ignore t :which-key "jump")
   "j c" 'avy-goto-char
@@ -774,14 +934,18 @@
   "g o" 'consult-outline
   "g m" 'consult-mark
   "g M" 'consult-global-mark
-  "g B" 'consult-bookmark
+  "g b" 'consult-bookmark
+  
   ;; todo jump
   "g T" '(:ignore t :which-key "todo")
-  "g T t" 'consult-todo
-  "g T p" 'consult-todo-project
-  "g T a" 'consult-todo-all
-  "g T d" 'consult-todo-dir
-  ;;("e" consult-compile-error)
+  "g T t" 'consult-todo     ;; check in the current buffer
+  "g T a" 'consult-todo-all ;; check in all live buffers
+  ;;"g T p" 'consult-todo-project ;; TODO: remove, it caches forever
+  "g T d" 'consult-todo-dir ;; check in the current directory
+  "g T r" 'hl-todo-rgrep    ;; check in any directory selecting a path
+  "g T o" 'hl-todo-occur
+
+  ;; TODO: add keybindings for org mode
   ;;("h" consult-org-heading)
   ;;("a" consult-org-agenda)
 
@@ -799,6 +963,7 @@
   "w s" 'hydra-window-scroll/body
   "w z" 'hydra-text-zoom/body
   "w c" 'pulsar-recenter-middle
+  "w w" 'ace-window    ;; when there is only two windows this is the same of other-window command
   "w o" 'other-window         ;; move to other window
   "w q" 'delete-window        ;; quit windows
   "w Q" 'delete-other-windows ;; quit other windows
@@ -817,52 +982,59 @@
   "b b" 'switch-to-buffer
   "b B" 'consult-buffer
   "b k" 'kill-buffer
-  "b K" 'kill-this-buffer
+  "b K" 'kill-current-buffer
 
   ;; manage keybindings for the project
   "p" '(:ignore t :which-key "project")
-  "p t" 'projectile-run-vterm
-  "p T" 'projectile-run-vterm-other-window
-
-  ;; project management commands
-  "p m" '(:ignore t :which-key "management")
-  "p m t" 'treemacs          ;; directories in a sidebar
-  "p m T" 'treemacs-projectile
-  "p m d" 'projectile-dired
-  "p m o" 'projectile-switch-open-project
-  "p m O" 'consult-projectile-switch-project
-
-  ;; project workspaces (perspectives)
+  "p d" 'treemacs               ;; directories tree
+  "p D" 'projectile-dired
+  "p t" 'projectile-run-vterm              ;; terminal shell
+  "p T" 'projectile-run-vterm-other-window ;; terminal shell other window
+  "p E" 'projectile-edit-dir-locals
+  
+  ;; project workspace management commands
   "p w" '(:ignore t :which-key "workspaces")
-  "p w c" 'persp-switch
-  "p w i" 'persp-ibuffer
-  "p w k" 'persp-kill
-  "p w s" 'persp-state-save
-  "p w l" 'persp-state-load
-  "p w r" 'persp-state-restore
-  "p w o" 'projectile-persp-switch-project
+  "p w c" 'treemacs-create-workspace
+  "p w C" 'treemacs-create-workspace-from-project
+  "p w a" 'treemacs-projectile             ;; it adds a new project to the workspace
+  "p w e" 'treemacs-edit-workspaces
+  "p w r" 'treemacs-remove-project-from-workspace
+  "p w s" 'treemacs-switch-workspace
+  "p w o" 'projectile-switch-open-project
+  "p w O" 'consult-projectile-switch-project
 
+  ;; TODO: try in the future use perspective again
+  ;; project perspectives (workspaces)
+  ;; "p p" '(:ignore t :which-key "perspectives")
+  ;; "p p c" 'persp-switch
+  ;; "p p i" 'persp-ibuffer
+  ;; "p p k" 'persp-kill
+  ;; "p p s" 'persp-state-save
+  ;; "p p l" 'persp-state-load
+  ;; "p p r" 'persp-state-restore
+  ;; "p p o" 'projectile-persp-switch-project
+  
   ;; project file and directory management
   "p f" '(:ignore t :which-key "file/dir")
   "p f d" 'consult-projectile-find-dir    
   "p f o" 'consult-projectile-find-file
   "p f r" 'consult-projectile-recentf
   "p f t" 'projectile-find-test-file
-
+  
   ;; project search and replace
   "p s" '(:ignore t :which-key "search")
-  "p s y" 'projectile-find-references
+  "p s f" 'projectile-find-references
   "p s g" 'projectile-ripgrep
   "p s r" 'projectile-replace
   "p s R" 'projectile-replace-regexp
-
+  
   ;; buffers in this project
   "p b" '(:ignore t :which-key "buffers")
   "p b s" 'projectile-save-project-buffers
   "p b b" 'consult-projectile-switch-to-buffer
   "p b r" 'consult-projectile-recentf
   "p b i" 'projectile-ibuffer
-
+  
   ;; execution commands for project
   "p x" '(:ignore t :which-key "execute")
   "p x C" 'projectile-configure-project
@@ -871,102 +1043,29 @@
   "p x r" 'projectile-run-project
   "p x P" 'projectile-package-project
   "p x I" 'projectile-install-project
+  "p x s" 'projectile-run-shell-command-in-root
+  "p x S" 'projectile-run-async-shell-command-in-root
 
-  ;; base text operations
-  "y" 'consult-yasnippet
-  "Y" 'yas-expand
-  "\\" 'my-insert-backslash
-  "-" 'pulsar-pulse-line
-  ";" 'comment-line
-  "z" 'undo
-  "Z" 'undo-redo
-  "c" 'kill-ring-save ;; copy
-  "C" 'duplicate-line
-  "x" 'kill-region ;; cut region
-  "X" 'kill-whole-line
-  "v" 'yank ;; paste
-  "V" 'consult-yank-replace ;; consult available paste list
+  ;; code details navigation
+  "p c" '(:ignore t :which-key "code")
+  "p c e" 'consult-compile-error
+  "p c g" 'consult-git-grep
+  "p c s" 'lsp-treemacs-symbols
+  "p c h" 'lsp-treemacs-code-hierarchy ;; LSP must support this
+  "p c i" 'lsp-treemacs-implementations ;; LSP must support this
+
+  ;; commands dedicated to the LSP tasks
+  "p l" '(:ignore t :which-key "LSP")
+  "p l a" 'lsp-execute-code-action
+  ;"p l !" 'flycheck-list-errors ;; diagnostics list in other buffer
+  "p l d" 'consult-flycheck ;; show diagnostics erros using consult
+  "p l D" 'lsp-ui-flycheck-list ;; show for the whole workspace
+  "p l !" 'flycheck-clear
+  ;; "g d" 'consult-lsp-diagnostics
+  ;; "g y" 'consult-lsp-file-symbols
+  ;; "g Y" 'consult-lsp-symbols
 
   ;; TODO: add entry for the visual mode (ryo)
   ;; TODO: put the flycheck commands here for "!" key
-
+  
   )
-
-;; TODO: you must think better about it, maybe this could be just an hydra to do the movements and selections
-;; TODO: change this to work as a selection (visual) mode only (OR this could be only a hydra)
-;; check for functionalities in evil, vim, spacemacs (visual mode), and meow helix/kakoune
-;; to do rich selections
-(use-package ryo-modal
-  :commands ryo-modal-mode
-  :bind ("C-c SPC" . ryo-modal-mode) ;; TODO change to a better keybiind (maybe ESC)
-  :config
-  (setq ryo-modal-cursor-color "peach puff")
-  (setq ryo-modal-cursor-type 'box)
-  (defun my-show-ryo-keymap ()
-    "Show the current ryo-modal-mode keybindings in a which-key popup."
-    (interactive)
-    (which-key-show-keymap 'ryo-modal-mode-map))
-
-  (ryo-modal-keys
-   ("," ryo-modal-repeat)
-   ("q" ryo-modal-mode)
-   ;; move one position
-   ("j" backward-char)
-   ("l" forward-char)
-   ("k" next-line)
-   ("i" previous-line)
-   ;; move jump-like
-   ("u" backward-word)
-   ("o" forward-word)
-   ("U" sp-backward-symbol)
-   ("O" sp-forward-symbol)
-   ("J" beginning-of-line)
-   ("L" end-of-line)
-   ("I" beginning-of-buffer)
-   ("K" end-of-buffer)
-   ;; TODO: review these jumps
-   ;; TODO: add p to call hydra to jump with smartparens
-   ("[" sp-beginning-of-previous-sexp)
-   ("]" sp-beginning-of-next-sexp)
-   ("{" sp-end-of-previous-sexp)
-   ("}" sp-end-of-next-sexp)
-
-   ;; TODO: still available keywords
-   ;; Q wW eE rR tT pP |
-   ;; aA sS Ff gG H :; '"
-   ;; xX cC vV bB nN M ,< .> /?
-
-   ;; base command section
-   ("ESC" keyboard-quit)
-   ("-" pulsar-pulse-line)
-   ;; undo/redo commands
-   ("z" undo)
-   ("Z" undo-redo)
-   ;; start a selection (region)
-   ("m" set-mark-command)
-   ;; TODO: add M to call hydra to advanced selection "submode"
-   ;; (e.g. select current line, backward, forward, multicursor, regex, etc)
-   ;; basic copy/cut/paste commands (kill/yank)
-   ("c" kill-ring-save) ;; copy
-   ;; TODO: add H for advanced the kill (hydra) advanced mode
-   ;;  e.g. word, line paragraph, buffer, etc.
-   ("C" kill-region) ;; cut region
-   ("d" kill-whole-line) ;; cut line
-   ("v" yank) ;; paste
-   ("V" consult-yank-replace))
-
-
-  (ryo-modal-keys
-   ;; First argument to ryo-modal-keys may be a list of keywords.
-   ;; These keywords will be applied to all keybindings.
-   (:norepeat t)
-   ("0" "M-0")
-   ("1" "M-1")
-   ("2" "M-2")
-   ("3" "M-3")
-   ("4" "M-4")
-   ("5" "M-5")
-   ("6" "M-6")
-   ("7" "M-7")
-   ("8" "M-8")
-   ("9" "M-9")))
