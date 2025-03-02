@@ -730,6 +730,10 @@
     :config
     (require 'dap-python))
 
+;; (use-package dap-mode
+;; :hook ((lsp-mode . dap-mode)
+       ;; (lsp-mode . dap-ui-mode)))
+
   ;; configure the lsp-docker in order to run the LSP servers inside the containers
   ;; and then do not need to install anything directly in my machine
   ;; (use-package lsp-docker)
@@ -772,7 +776,7 @@
   (deactivate-mark))
  ;; do nothing with region, just move pointer
  ((eq my-hydra-cut-or-copy 'move)
-  (message "Cursor moved."))))
+  (message "Region selected."))))
 
 (defun my-hydra-deactivate-mark-and-quit ()
 "Unmark current region and show a message."
@@ -826,9 +830,10 @@
   (set-mark (point))
   (my-hydra-setup 'delete))
 
-(defun my-hydra-move ()
+(defun my-hydra-move-select ()
   "Activate the Hydra with move action."
   (interactive)
+  (set-mark (point))
   (my-hydra-setup 'move))
 
     (defhydra hydra-text-zoom (:color pink :timeout 4)
@@ -930,7 +935,7 @@
   "V" 'consult-yank-replace ;; consult available paste list
   "n" 'hydra-text-navigation/body
   "?" 'general-describe-keybindings
-  "m" 'my-hydra-move
+  "m" 'my-hydra-move-select
   
   ;; commands to execute
   "e" '(:ignore t :which-key "execute")
