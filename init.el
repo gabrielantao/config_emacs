@@ -42,7 +42,7 @@
 
  ;; Use "y or n" instead of "yes or no" and better message of scratch buffer
  (fset 'yes-or-no-p 'y-or-n-p)
- (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...\n\n")
+ (setq initial-scratch-message ";; This is the playground buffer to try elisp expressions ...\n\n")
 
  ;; backups and auto save
  (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
@@ -70,6 +70,9 @@
  ;; unset the suspend-frame
  (global-unset-key (kbd "C-z"))
  (global-unset-key (kbd "C-x C-z"))
+
+;; shift do not select, use hydras instead (cut/delete/copy/move operations)
+(setq shift-select-mode nil)
 
 ;; define the straight.el
 (defvar bootstrap-version)
@@ -746,39 +749,51 @@
   (lsp-treemacs-sync-mode 1))
 
 (use-package hydra)
-  ;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
+(defvar my-hydra-cut-or-copy 'copy
+  "Define if the action in the Hydra should be 'cut' or 'copy' or 'move'.")
 
-  
-  ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
-  ;; TODO: review if need these lambda interactive here
-  ;; (defhydra hydra-sp-move (:exit nil)
-  ;;   "Navegate with smartparens"
-  ;;   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
-  ;;   ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
-  ;;   ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
-  ;;   ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
-  ;;   ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
-  ;;   ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
-  ;;   ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
-  ;;   ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
-  ;;   ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
-  ;;   ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
-  ;;   ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
-  ;;   ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
-  ;;   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
-  ;;   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
-  ;;   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
-  ;;   ("q" nil "quit" :exit t :color blue))
-  ;; ;;(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+(defun my-hydra-action ()
+"Perform the action of copy, cut, or move depending on `my-hydra-cut-or-copy`."
+(interactive)
+(cond
+ ;; copy text under region
+ ((eq my-hydra-cut-or-copy 'copy)
+  (kill-ring-save (region-beginning) (region-end))
+  (message "Region copied.")
+  (deactivate-mark))
+ ;; cut the text under region
+ ((eq my-hydra-cut-or-copy 'cut)
+  (kill-region (region-beginning) (region-end))
+  (message "Region cut.")
+  (deactivate-mark))
+ ((eq my-hydra-cut-or-copy 'delete)
+  (delete-region (region-beginning) (region-end))
+  (message "Region deleted.")
+  (deactivate-mark))
+ ;; do nothing with region, just move pointer
+ ((eq my-hydra-cut-or-copy 'move)
+  (message "Cursor moved."))))
 
-(defhydra hydra-text-navigation (:color pink :columns 4)
-  "Text Navigation & Editing"
-  ;; move one position
+(defun my-hydra-deactivate-mark-and-quit ()
+"Unmark current region and show a message."
+  (interactive)
+  (deactivate-mark)
+  (message "Cursor moved."))
+
+(defhydra my-hydra-copy-or-cut (:foreign-keys warn :columns 4)
+  "Copy, cut a region or just navigate with cursor jumps."
+  ("q" my-hydra-deactivate-mark-and-quit "Quit" :exit t) 
+  ("a" my-hydra-action "Accept" :exit t)
+  ("-" pulsar-pulse-line "Pulse")
+  ;; movements
   ("j" backward-char "← Char")
-  ("l" forward-char "→ Char")
   ("k" next-line "↓ Line")
   ("i" previous-line "↑ Line")
-  ;; move jump-like
+  ("l" forward-char "→ Char")
+  ("<left>" backward-char "← Char")
+  ("<down>" next-line "↓ Line")    
+  ("<up>" previous-line "↑ Line")  
+  ("<right>" forward-char "→ Char")
   ("u" backward-word "← Word")
   ("o" forward-word "→ Word")
   ("U" sp-backward-symbol "← Symbol")
@@ -786,76 +801,84 @@
   ("J" beginning-of-line "|← Line Start")
   ("L" end-of-line "→| Line End")
   ("I" beginning-of-buffer "↖ Buffer Start")
-  ("K" end-of-buffer "↘ Buffer End")
-  ;; selection
-  ("m" set-mark-command "Mark")
-  ;; ("M" <sub-hydra-selection>) ;; TODO: Adicionar sub-hydra para seleções avançadas
-  ;; base command section
-  ("-" pulsar-pulse-line "Pulse")
-  ("z" undo "Undo")
-  ("Z" undo-redo "Redo")
-  ;; Copy/Cut/Paste commands
-  ("c" kill-ring-save "Copy")
-  ("x" my-kill-region-or-line "Cut")
-  ("v" yank "Paste")
-  ("V" consult-yank-replace "Insert Copied")
-  ;; exit
-  ("q" nil "Exit" :exit t))
+  ("K" end-of-buffer "↘ Buffer End"))
 
+(defun my-hydra-setup (action)
+  "Set up the Hydra with the correct action (copy or cut)."
+  (setq my-hydra-cut-or-copy action)
+  (my-hydra-copy-or-cut/body))
 
-  (defhydra hydra-text-zoom (:color pink :timeout 4)
-    "Scale text font"
-    ("i" text-scale-increase "in")
-    ("k" text-scale-decrease "out")
-    ("q" nil "quit" :color blue))
-  ;;(global-set-key (kbd "C-c a") 'hydra-text-zoom/body)
+(defun my-hydra-copy ()
+  "Activate the Hydra with copy action."
+  (interactive)
+  (set-mark (point))
+  (my-hydra-setup 'copy))
 
+(defun my-hydra-cut ()
+  "Activate the Hydra with cut action."
+  (interactive)
+  (set-mark (point))
+  (my-hydra-setup 'cut))
 
-  (defhydra hydra-window-scroll (:hint nil :color red)
+(defun my-hydra-delete ()
+  "Activate the Hydra with delete action."
+  (interactive)
+  (set-mark (point))
+  (my-hydra-setup 'delete))
+
+(defun my-hydra-move ()
+  "Activate the Hydra with move action."
+  (interactive)
+  (my-hydra-setup 'move))
+
+    (defhydra hydra-text-zoom (:color pink :timeout 4)
+      "Scale text font"
+      ("i" text-scale-increase "in")
+      ("k" text-scale-decrease "out")
+      ("q" nil "quit" :color blue))
+
+    (defhydra hydra-window-scroll (:hint nil :color red)
+      "
+      Scrolling and Navigation:
+      [_j_] ← scroll left  [_l_] → scroll right
+      [_i_] ↑ scroll up    [_k_] ↓ scroll down
+      [_I_] ↑↑ page up     [_K_] ↓↓ page down
+      [_c_] - recenter
+      [_q_] quit
     "
-    Scrolling and Navigation:
-    [_j_] ← scroll left  [_l_] → scroll right
-    [_i_] ↑ scroll up    [_k_] ↓ scroll down
-    [_I_] ↑↑ page up     [_K_] ↓↓ page down
-    [_c_] - recenter
-    [_q_] quit
-  "
-    ("l" scroll-left)
-    ("j" scroll-right)
-    ;; option: simple scroll with static point
-    ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
-    ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
-    ("i" my-pulsar-scroll-page-up-multi)
-    ("k" my-pulsar-scroll-page-down-multi)
-    ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
-    ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
-    ("c" pulsar-recenter-middle)
-    ("q" nil))
-  ;;(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
+      ("l" scroll-left)
+      ("j" scroll-right)
+      ;; option: simple scroll with static point
+      ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
+      ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
+      ("i" my-pulsar-scroll-page-up-multi)
+      ("k" my-pulsar-scroll-page-down-multi)
+      ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
+      ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
+      ("c" pulsar-recenter-middle)
+      ("q" nil))
 
-
-  (defhydra hydra-window-move (:color pink :columns 4)
-    "Window navigation and manipulation"
-    ("j" windmove-left "← left")
-    ("l" windmove-right "→ right")
-    ("k" windmove-down "↓ down")
-    ("i" windmove-up "↑ up")
-    ("J" windmove-swap-states-left "←← swap left")
-    ("L" windmove-swap-states-right "→→ swap right")
-    ("K" windmove-swap-states-down "↓↓ swap down")
-    ("I" windmove-swap-states-up "↑↑ swap up")
-    ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
-    ("g" shrink-window-horizontally "→|← shrink horizontally")
-    ("y" enlarge-window "←|→ enlarge vertically")
-    ("h" shrink-window "→|← shrink vertically")
-    ("a" split-window-vertically "== split in rows")
-    ("s" split-window-horizontally "|| split in columns")
-    ("d" delete-window "delete window")
-    ("D" delete-other-windows "delete other windows")
-    ("o" other-window "other window")
-    ("c" pulsar-recenter-middle "center window")
-    ("q" nil "quit"))
-  ;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
+    (defhydra hydra-window-move (:color pink :columns 4)
+      "Window navigation and manipulation"
+      ("j" windmove-left "← left")
+      ("l" windmove-right "→ right")
+      ("k" windmove-down "↓ down")
+      ("i" windmove-up "↑ up")
+      ("J" windmove-swap-states-left "←← swap left")
+      ("L" windmove-swap-states-right "→→ swap right")
+      ("K" windmove-swap-states-down "↓↓ swap down")
+      ("I" windmove-swap-states-up "↑↑ swap up")
+      ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
+      ("g" shrink-window-horizontally "→|← shrink horizontally")
+      ("y" enlarge-window "←|→ enlarge vertically")
+      ("h" shrink-window "→|← shrink vertically")
+      ("a" split-window-vertically "== split in rows")
+      ("s" split-window-horizontally "|| split in columns")
+      ("d" delete-window "delete window")
+      ("D" delete-other-windows "delete other windows")
+      ("o" other-window "other window")
+      ("c" pulsar-recenter-middle "center window")
+      ("q" nil "quit"))
 
 (use-package general)
 
@@ -877,7 +900,12 @@
     (kill-region (region-beginning) (region-end))
   (kill-whole-line)))
 
-
+(defun my-delete-whole-line ()
+  "Delete the whole line without puting in the kill ring."
+  (interactive)
+  (delete-region (line-beginning-position) (line-end-position))
+  (forward-line 1)
+  (delete-backward-char 1))
 
 (general-create-definer my/leader-key
   :keymaps 'override
@@ -892,14 +920,17 @@
   ";" 'comment-line
   "z" 'undo
   "Z" 'undo-redo
-  "c" 'kill-ring-save ;; copy
+  "c" 'my-hydra-copy
   "C" 'duplicate-line
-  "x" 'my-kill-region-or-line ;; cut region or whole line
+  "x" 'my-hydra-cut    
   "X" 'kill-whole-line
+  "d" 'my-hydra-delete
+  "D" 'my-delete-whole-line
   "v" 'yank ;; paste
   "V" 'consult-yank-replace ;; consult available paste list
   "n" 'hydra-text-navigation/body
   "?" 'general-describe-keybindings
+  "m" 'my-hydra-move
   
   ;; commands to execute
   "e" '(:ignore t :which-key "execute")
@@ -1063,9 +1094,5 @@
   "p l !" 'flycheck-clear
   ;; "g d" 'consult-lsp-diagnostics
   ;; "g y" 'consult-lsp-file-symbols
-  ;; "g Y" 'consult-lsp-symbols
-
-  ;; TODO: add entry for the visual mode (ryo)
-  ;; TODO: put the flycheck commands here for "!" key
-  
+  ;; "g Y" 'consult-lsp-symbols      
   )

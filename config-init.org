@@ -48,7 +48,7 @@
 
    ;; Use "y or n" instead of "yes or no" and better message of scratch buffer
    (fset 'yes-or-no-p 'y-or-n-p)
-   (setq initial-scratch-message ";; This is a playground buffer to try elisp expressions ...\n\n")
+   (setq initial-scratch-message ";; This is the playground buffer to try elisp expressions ...\n\n")
 
    ;; backups and auto save
    (setq backup-directory-alist `(("." . "~/.emacs.d/backups")))
@@ -76,6 +76,9 @@
    ;; unset the suspend-frame
    (global-unset-key (kbd "C-z"))
    (global-unset-key (kbd "C-x C-z"))
+
+  ;; shift do not select, use hydras instead (cut/delete/copy/move operations)
+  (setq shift-select-mode nil)
 #+end_src
 
 * Straight
@@ -802,40 +805,52 @@ This instalation requires the lib
 
 * Hydras
 #+begin_src emacs-lisp
-    (use-package hydra)
-    ;; TODO: adjust the colors of hydras to have the proper behavior for the hydras
+      (use-package hydra)
+  (defvar my-hydra-cut-or-copy 'copy
+    "Define if the action in the Hydra should be 'cut' or 'copy' or 'move'.")
 
-    
-    ;; TODO: use this jumps the keybindings like [] () {} to do the jumps (think about it)
-    ;; TODO: review if need these lambda interactive here
-    ;; (defhydra hydra-sp-move (:exit nil)
-    ;;   "Navegate with smartparens"
-    ;;   ("f" (lambda () (interactive) (sp-forward-sexp)) "Avançar sexp (C-M-f)")
-    ;;   ("b" (lambda () (interactive) (sp-backward-sexp)) "Retroceder sexp (C-M-b)")
-    ;;   ("d" (lambda () (interactive) (sp-down-sexp)) "Descer sexp (C-M-d)")
-    ;;   ("a" (lambda () (interactive) (sp-backward-down-sexp)) "Descer sexp (C-M-a)")
-    ;;   ("e" (lambda () (interactive) (sp-up-sexp)) "Subir sexp (C-M-e)")
-    ;;   ("u" (lambda () (interactive) (sp-backward-up-sexp)) "Subir sexp (C-M-u)")
-    ;;   ("n" (lambda () (interactive) (sp-next-sexp)) "Próximo sexp (C-M-n)")
-    ;;   ("p" (lambda () (interactive) (sp-previous-sexp)) "Anterior sexp (C-M-p)")
-    ;;   ("D" (lambda () (interactive) (sp-beginning-of-sexp)) "Início do sexp (C-S-d)")
-    ;;   ("A" (lambda () (interactive) (sp-end-of-sexp)) "Fim do sexp (C-S-a)")
-    ;;   ;; TODO: Você pode adicionar os comandos que faltam aqui, se desejar, como:
-    ;;   ;; ("N" (lambda () (interactive) (sp-beginning-of-next-sexp)) "Início do próximo sexp")
-    ;;   ;; ("P" (lambda () (interactive) (sp-beginning-of-previous-sexp)) "Início do sexp anterior")
-    ;;   ;; ("<" (lambda () (interactive) (sp-end-of-previous-sexp)) "Fim do sexp anterior")
-    ;;   ;; (">" (lambda () (interactive) (sp-end-of-next-sexp)) "Fim do próximo sexp")
-    ;;   ("q" nil "quit" :exit t :color blue))
-    ;; ;;(global-set-key (kbd "C-c n") 'hydra-sp-nav/body) ;; Define a tecla de prefixo para a Hydra (C-c s n)
+  (defun my-hydra-action ()
+  "Perform the action of copy, cut, or move depending on `my-hydra-cut-or-copy`."
+  (interactive)
+  (cond
+   ;; copy text under region
+   ((eq my-hydra-cut-or-copy 'copy)
+    (kill-ring-save (region-beginning) (region-end))
+    (message "Region copied.")
+    (deactivate-mark))
+   ;; cut the text under region
+   ((eq my-hydra-cut-or-copy 'cut)
+    (kill-region (region-beginning) (region-end))
+    (message "Region cut.")
+    (deactivate-mark))
+   ((eq my-hydra-cut-or-copy 'delete)
+    (delete-region (region-beginning) (region-end))
+    (message "Region deleted.")
+    (deactivate-mark))
+   ;; do nothing with region, just move pointer
+   ((eq my-hydra-cut-or-copy 'move)
+    (message "Cursor moved."))))
 
-  (defhydra hydra-text-navigation (:color pink :columns 4)
-    "Text Navigation & Editing"
-    ;; move one position
+  (defun my-hydra-deactivate-mark-and-quit ()
+  "Unmark current region and show a message."
+    (interactive)
+    (deactivate-mark)
+    (message "Cursor moved."))
+
+  (defhydra my-hydra-copy-or-cut (:foreign-keys warn :columns 4)
+    "Copy, cut a region or just navigate with cursor jumps."
+    ("q" my-hydra-deactivate-mark-and-quit "Quit" :exit t) 
+    ("a" my-hydra-action "Accept" :exit t)
+    ("-" pulsar-pulse-line "Pulse")
+    ;; movements
     ("j" backward-char "← Char")
-    ("l" forward-char "→ Char")
     ("k" next-line "↓ Line")
     ("i" previous-line "↑ Line")
-    ;; move jump-like
+    ("l" forward-char "→ Char")
+    ("<left>" backward-char "← Char")
+    ("<down>" next-line "↓ Line")    
+    ("<up>" previous-line "↑ Line")  
+    ("<right>" forward-char "→ Char")
     ("u" backward-word "← Word")
     ("o" forward-word "→ Word")
     ("U" sp-backward-symbol "← Symbol")
@@ -843,293 +858,303 @@ This instalation requires the lib
     ("J" beginning-of-line "|← Line Start")
     ("L" end-of-line "→| Line End")
     ("I" beginning-of-buffer "↖ Buffer Start")
-    ("K" end-of-buffer "↘ Buffer End")
-    ;; selection
-    ("m" set-mark-command "Mark")
-    ;; ("M" <sub-hydra-selection>) ;; TODO: Adicionar sub-hydra para seleções avançadas
-    ;; base command section
-    ("-" pulsar-pulse-line "Pulse")
-    ("z" undo "Undo")
-    ("Z" undo-redo "Redo")
-    ;; Copy/Cut/Paste commands
-    ("c" kill-ring-save "Copy")
-    ("x" my-kill-region-or-line "Cut")
-    ("v" yank "Paste")
-    ("V" consult-yank-replace "Insert Copied")
-    ;; exit
-    ("q" nil "Exit" :exit t))
+    ("K" end-of-buffer "↘ Buffer End"))
 
+  (defun my-hydra-setup (action)
+    "Set up the Hydra with the correct action (copy or cut)."
+    (setq my-hydra-cut-or-copy action)
+    (my-hydra-copy-or-cut/body))
 
-    (defhydra hydra-text-zoom (:color pink :timeout 4)
-      "Scale text font"
-      ("i" text-scale-increase "in")
-      ("k" text-scale-decrease "out")
-      ("q" nil "quit" :color blue))
-    ;;(global-set-key (kbd "C-c a") 'hydra-text-zoom/body)
+  (defun my-hydra-copy ()
+    "Activate the Hydra with copy action."
+    (interactive)
+    (set-mark (point))
+    (my-hydra-setup 'copy))
 
+  (defun my-hydra-cut ()
+    "Activate the Hydra with cut action."
+    (interactive)
+    (set-mark (point))
+    (my-hydra-setup 'cut))
 
-    (defhydra hydra-window-scroll (:hint nil :color red)
+  (defun my-hydra-delete ()
+    "Activate the Hydra with delete action."
+    (interactive)
+    (set-mark (point))
+    (my-hydra-setup 'delete))
+
+  (defun my-hydra-move ()
+    "Activate the Hydra with move action."
+    (interactive)
+    (my-hydra-setup 'move))
+
+      (defhydra hydra-text-zoom (:color pink :timeout 4)
+        "Scale text font"
+        ("i" text-scale-increase "in")
+        ("k" text-scale-decrease "out")
+        ("q" nil "quit" :color blue))
+
+      (defhydra hydra-window-scroll (:hint nil :color red)
+        "
+        Scrolling and Navigation:
+        [_j_] ← scroll left  [_l_] → scroll right
+        [_i_] ↑ scroll up    [_k_] ↓ scroll down
+        [_I_] ↑↑ page up     [_K_] ↓↓ page down
+        [_c_] - recenter
+        [_q_] quit
       "
-      Scrolling and Navigation:
-      [_j_] ← scroll left  [_l_] → scroll right
-      [_i_] ↑ scroll up    [_k_] ↓ scroll down
-      [_I_] ↑↑ page up     [_K_] ↓↓ page down
-      [_c_] - recenter
-      [_q_] quit
-    "
-      ("l" scroll-left)
-      ("j" scroll-right)
-      ;; option: simple scroll with static point
-      ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
-      ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
-      ("i" my-pulsar-scroll-page-up-multi)
-      ("k" my-pulsar-scroll-page-down-multi)
-      ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
-      ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
-      ("c" pulsar-recenter-middle)
-      ("q" nil))
-    ;;(global-set-key (kbd "C-c v") 'hydra-window-scroll/body)
+        ("l" scroll-left)
+        ("j" scroll-right)
+        ;; option: simple scroll with static point
+        ;; ("i" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-up))))
+        ;; ("k" (lambda (n) (interactive "p") (dotimes (_ n) (scroll-page-without-moving-point-down))))
+        ("i" my-pulsar-scroll-page-up-multi)
+        ("k" my-pulsar-scroll-page-down-multi)
+        ("K" (lambda () (interactive) (scroll-up-command) (pulsar-recenter-middle)))
+        ("I" (lambda () (interactive) (scroll-down-command) (pulsar-recenter-middle)))
+        ("c" pulsar-recenter-middle)
+        ("q" nil))
 
-
-    (defhydra hydra-window-move (:color pink :columns 4)
-      "Window navigation and manipulation"
-      ("j" windmove-left "← left")
-      ("l" windmove-right "→ right")
-      ("k" windmove-down "↓ down")
-      ("i" windmove-up "↑ up")
-      ("J" windmove-swap-states-left "←← swap left")
-      ("L" windmove-swap-states-right "→→ swap right")
-      ("K" windmove-swap-states-down "↓↓ swap down")
-      ("I" windmove-swap-states-up "↑↑ swap up")
-      ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
-      ("g" shrink-window-horizontally "→|← shrink horizontally")
-      ("y" enlarge-window "←|→ enlarge vertically")
-      ("h" shrink-window "→|← shrink vertically")
-      ("a" split-window-vertically "== split in rows")
-      ("s" split-window-horizontally "|| split in columns")
-      ("d" delete-window "delete window")
-      ("D" delete-other-windows "delete other windows")
-      ("o" other-window "other window")
-      ("c" pulsar-recenter-middle "center window")
-      ("q" nil "quit"))
-    ;;(global-set-key (kbd "C-c w") 'hydra-window-move/body)
-
+      (defhydra hydra-window-move (:color pink :columns 4)
+        "Window navigation and manipulation"
+        ("j" windmove-left "← left")
+        ("l" windmove-right "→ right")
+        ("k" windmove-down "↓ down")
+        ("i" windmove-up "↑ up")
+        ("J" windmove-swap-states-left "←← swap left")
+        ("L" windmove-swap-states-right "→→ swap right")
+        ("K" windmove-swap-states-down "↓↓ swap down")
+        ("I" windmove-swap-states-up "↑↑ swap up")
+        ("t" enlarge-window-horizontally "←|→ enlarge horizontally")
+        ("g" shrink-window-horizontally "→|← shrink horizontally")
+        ("y" enlarge-window "←|→ enlarge vertically")
+        ("h" shrink-window "→|← shrink vertically")
+        ("a" split-window-vertically "== split in rows")
+        ("s" split-window-horizontally "|| split in columns")
+        ("d" delete-window "delete window")
+        ("D" delete-other-windows "delete other windows")
+        ("o" other-window "other window")
+        ("c" pulsar-recenter-middle "center window")
+        ("q" nil "quit"))
 #+end_src
 
 * General.el keybindings
 #+begin_src emacs-lisp
-  (use-package general)
+    (use-package general)
 
-  ;; TODO: create hydras for these functions
-  ;; identation/aligns
-  ;; folding
-  ;; moving between symbols
-  ;; move line or region to line X or above/below line
+    ;; TODO: create hydras for these functions
+    ;; identation/aligns
+    ;; folding
+    ;; moving between symbols
+    ;; move line or region to line X or above/below line
 
-  (defun my-insert-backslash ()
-    "Insert a backslash (`\\`)."
+    (defun my-insert-backslash ()
+      "Insert a backslash (`\\`)."
+      (interactive)
+      (insert "\\"))
+
+    (defun my-kill-region-or-line ()
+    "Kill a region, or cut whole line if there is not active region."
     (interactive)
-    (insert "\\"))
+    (if (use-region-p)
+        (kill-region (region-beginning) (region-end))
+      (kill-whole-line)))
 
-  (defun my-kill-region-or-line ()
-  "Kill a region, or cut whole line if there is not active region."
-  (interactive)
-  (if (use-region-p)
-      (kill-region (region-beginning) (region-end))
-    (kill-whole-line)))
+    (defun my-delete-whole-line ()
+      "Delete the whole line without puting in the kill ring."
+      (interactive)
+      (delete-region (line-beginning-position) (line-end-position))
+      (forward-line 1)
+      (delete-backward-char 1))
 
+    (general-create-definer my/leader-key
+      :keymaps 'override
+      :prefix "\\"
+      :global-prefix "C-\\")
+    (my/leader-key
+      ;; base text operations
+      "y" 'consult-yasnippet
+      "Y" 'yas-expand
+      "\\" 'my-insert-backslash
+      "-" 'pulsar-pulse-line
+      ";" 'comment-line
+      "z" 'undo
+      "Z" 'undo-redo
+      "c" 'my-hydra-copy
+      "C" 'duplicate-line
+      "x" 'my-hydra-cut    
+      "X" 'kill-whole-line
+      "d" 'my-hydra-delete
+      "D" 'my-delete-whole-line
+      "v" 'yank ;; paste
+      "V" 'consult-yank-replace ;; consult available paste list
+      "n" 'hydra-text-navigation/body
+      "?" 'general-describe-keybindings
+      "m" 'my-hydra-move
+      
+      ;; commands to execute
+      "e" '(:ignore t :which-key "execute")
+      "e x" 'execute-extended-command
+      "e a" 'embark-act
+      "e b" 'embark-bindings
+      "e e" 'eval-buffer
+      "e R" 'restart-emacs
+      "e Q" 'save-buffers-kill-terminal
+      "e d" 'dired
+      "e g" 'magit
+      "e t" 'vterm              ;; terminal shell
+      "e T" 'vterm-other-window ;; terminal shell other window
+      "e s" 'shell-command
+      "e S" 'async-shell-command
+      
+      ;; ace jump in visible area of buffers
+      "j" '(:ignore t :which-key "jump")
+      "j c" 'avy-goto-char
+      "j w" 'avy-goto-word-1
+      "j l" 'avy-goto-line ;; go to line using letters
+      "j t" 'avy-goto-char-timer
+      "j k" 'ace-link
 
+      ;; bigger jumps throughout the buffers to specific points
+      "g" '(:ignore t :which-key "goto")
+      "g l" 'consult-goto-line ;; go to line using number
+      "g s" 'consult-line ;; go to searched term
+      "g S" 'consult-line-multi
+      "g i" 'consult-imenu
+      "g I" 'consult-imenu-multi
+      "g o" 'consult-outline
+      "g m" 'consult-mark
+      "g M" 'consult-global-mark
+      "g b" 'consult-bookmark
+      
+      ;; todo jump
+      "g T" '(:ignore t :which-key "todo")
+      "g T t" 'consult-todo     ;; check in the current buffer
+      "g T a" 'consult-todo-all ;; check in all live buffers
+      ;;"g T p" 'consult-todo-project ;; TODO: remove, it caches forever
+      "g T d" 'consult-todo-dir ;; check in the current directory
+      "g T r" 'hl-todo-rgrep    ;; check in any directory selecting a path
+      "g T o" 'hl-todo-occur
 
-  (general-create-definer my/leader-key
-    :keymaps 'override
-    :prefix "\\"
-    :global-prefix "C-\\")
-  (my/leader-key
-    ;; base text operations
-    "y" 'consult-yasnippet
-    "Y" 'yas-expand
-    "\\" 'my-insert-backslash
-    "-" 'pulsar-pulse-line
-    ";" 'comment-line
-    "z" 'undo
-    "Z" 'undo-redo
-    "c" 'kill-ring-save ;; copy
-    "C" 'duplicate-line
-    "x" 'my-kill-region-or-line ;; cut region or whole line
-    "X" 'kill-whole-line
-    "v" 'yank ;; paste
-    "V" 'consult-yank-replace ;; consult available paste list
-    "n" 'hydra-text-navigation/body
-    "?" 'general-describe-keybindings
-    
-    ;; commands to execute
-    "e" '(:ignore t :which-key "execute")
-    "e x" 'execute-extended-command
-    "e a" 'embark-act
-    "e b" 'embark-bindings
-    "e e" 'eval-buffer
-    "e R" 'restart-emacs
-    "e Q" 'save-buffers-kill-terminal
-    "e d" 'dired
-    "e g" 'magit
-    "e t" 'vterm              ;; terminal shell
-    "e T" 'vterm-other-window ;; terminal shell other window
-    "e s" 'shell-command
-    "e S" 'async-shell-command
-    
-    ;; ace jump in visible area of buffers
-    "j" '(:ignore t :which-key "jump")
-    "j c" 'avy-goto-char
-    "j w" 'avy-goto-word-1
-    "j l" 'avy-goto-line ;; go to line using letters
-    "j t" 'avy-goto-char-timer
-    "j k" 'ace-link
+      ;; TODO: add keybindings for org mode
+      ;;("h" consult-org-heading)
+      ;;("a" consult-org-agenda)
 
-    ;; bigger jumps throughout the buffers to specific points
-    "g" '(:ignore t :which-key "goto")
-    "g l" 'consult-goto-line ;; go to line using number
-    "g s" 'consult-line ;; go to searched term
-    "g S" 'consult-line-multi
-    "g i" 'consult-imenu
-    "g I" 'consult-imenu-multi
-    "g o" 'consult-outline
-    "g m" 'consult-mark
-    "g M" 'consult-global-mark
-    "g b" 'consult-bookmark
-    
-    ;; todo jump
-    "g T" '(:ignore t :which-key "todo")
-    "g T t" 'consult-todo     ;; check in the current buffer
-    "g T a" 'consult-todo-all ;; check in all live buffers
-    ;;"g T p" 'consult-todo-project ;; TODO: remove, it caches forever
-    "g T d" 'consult-todo-dir ;; check in the current directory
-    "g T r" 'hl-todo-rgrep    ;; check in any directory selecting a path
-    "g T o" 'hl-todo-occur
+      ;; search and replace
+      "s" '(:ignore t :which-key "search/replace")
+      "s g" 'consult-ripgrep
+      "s r" 'anzu-query-replace
+      "s R" 'anzu-query-replace-regexp
+      "s b" 'my/anzu-replace-in-buffer
+      "s B" 'my/anzu-replace-in-buffer-regexp
 
-    ;; TODO: add keybindings for org mode
-    ;;("h" consult-org-heading)
-    ;;("a" consult-org-agenda)
+      ;; windows management and movements
+      "w" '(:ignore t :which-key "window")
+      "w m" 'hydra-window-move/body
+      "w s" 'hydra-window-scroll/body
+      "w z" 'hydra-text-zoom/body
+      "w c" 'pulsar-recenter-middle
+      "w w" 'ace-window    ;; when there is only two windows this is the same of other-window command
+      "w o" 'other-window         ;; move to other window
+      "w q" 'delete-window        ;; quit windows
+      "w Q" 'delete-other-windows ;; quit other windows
 
-    ;; search and replace
-    "s" '(:ignore t :which-key "search/replace")
-    "s g" 'consult-ripgrep
-    "s r" 'anzu-query-replace
-    "s R" 'anzu-query-replace-regexp
-    "s b" 'my/anzu-replace-in-buffer
-    "s B" 'my/anzu-replace-in-buffer-regexp
+      ;; deal with files
+      "f" '(:ignore t :which-key "files/dir")
+      "f d" 'consult-dir
+      "f o" 'find-file     ;; open file
+      "f f" 'consult-fd    ;; find file with fd
+      "f F" 'consult-find
+      "f r" 'consult-recent-file
 
-    ;; windows management and movements
-    "w" '(:ignore t :which-key "window")
-    "w m" 'hydra-window-move/body
-    "w s" 'hydra-window-scroll/body
-    "w z" 'hydra-text-zoom/body
-    "w c" 'pulsar-recenter-middle
-    "w w" 'ace-window    ;; when there is only two windows this is the same of other-window command
-    "w o" 'other-window         ;; move to other window
-    "w q" 'delete-window        ;; quit windows
-    "w Q" 'delete-other-windows ;; quit other windows
+      ;; deal with buffer
+      "b" '(:ignore t :which-key "buffers")
+      "b s" 'save-buffer
+      "b b" 'switch-to-buffer
+      "b B" 'consult-buffer
+      "b k" 'kill-buffer
+      "b K" 'kill-current-buffer
 
-    ;; deal with files
-    "f" '(:ignore t :which-key "files/dir")
-    "f d" 'consult-dir
-    "f o" 'find-file     ;; open file
-    "f f" 'consult-fd    ;; find file with fd
-    "f F" 'consult-find
-    "f r" 'consult-recent-file
+      ;; manage keybindings for the project
+      "p" '(:ignore t :which-key "project")
+      "p d" 'treemacs               ;; directories tree
+      "p D" 'projectile-dired
+      "p t" 'projectile-run-vterm              ;; terminal shell
+      "p T" 'projectile-run-vterm-other-window ;; terminal shell other window
+      "p E" 'projectile-edit-dir-locals
+      
+      ;; project workspace management commands
+      "p w" '(:ignore t :which-key "workspaces")
+      "p w c" 'treemacs-create-workspace
+      "p w C" 'treemacs-create-workspace-from-project
+      "p w a" 'treemacs-projectile             ;; it adds a new project to the workspace
+      "p w e" 'treemacs-edit-workspaces
+      "p w r" 'treemacs-remove-project-from-workspace
+      "p w s" 'treemacs-switch-workspace
+      "p w o" 'projectile-switch-open-project
+      "p w O" 'consult-projectile-switch-project
 
-    ;; deal with buffer
-    "b" '(:ignore t :which-key "buffers")
-    "b s" 'save-buffer
-    "b b" 'switch-to-buffer
-    "b B" 'consult-buffer
-    "b k" 'kill-buffer
-    "b K" 'kill-current-buffer
+      ;; TODO: try in the future use perspective again
+      ;; project perspectives (workspaces)
+      ;; "p p" '(:ignore t :which-key "perspectives")
+      ;; "p p c" 'persp-switch
+      ;; "p p i" 'persp-ibuffer
+      ;; "p p k" 'persp-kill
+      ;; "p p s" 'persp-state-save
+      ;; "p p l" 'persp-state-load
+      ;; "p p r" 'persp-state-restore
+      ;; "p p o" 'projectile-persp-switch-project
+      
+      ;; project file and directory management
+      "p f" '(:ignore t :which-key "file/dir")
+      "p f d" 'consult-projectile-find-dir    
+      "p f o" 'consult-projectile-find-file
+      "p f r" 'consult-projectile-recentf
+      "p f t" 'projectile-find-test-file
+      
+      ;; project search and replace
+      "p s" '(:ignore t :which-key "search")
+      "p s f" 'projectile-find-references
+      "p s g" 'projectile-ripgrep
+      "p s r" 'projectile-replace
+      "p s R" 'projectile-replace-regexp
+      
+      ;; buffers in this project
+      "p b" '(:ignore t :which-key "buffers")
+      "p b s" 'projectile-save-project-buffers
+      "p b b" 'consult-projectile-switch-to-buffer
+      "p b r" 'consult-projectile-recentf
+      "p b i" 'projectile-ibuffer
+      
+      ;; execution commands for project
+      "p x" '(:ignore t :which-key "execute")
+      "p x C" 'projectile-configure-project
+      "p x c" 'projectile-compile-project
+      "p x t" 'projectile-test-project
+      "p x r" 'projectile-run-project
+      "p x P" 'projectile-package-project
+      "p x I" 'projectile-install-project
+      "p x s" 'projectile-run-shell-command-in-root
+      "p x S" 'projectile-run-async-shell-command-in-root
 
-    ;; manage keybindings for the project
-    "p" '(:ignore t :which-key "project")
-    "p d" 'treemacs               ;; directories tree
-    "p D" 'projectile-dired
-    "p t" 'projectile-run-vterm              ;; terminal shell
-    "p T" 'projectile-run-vterm-other-window ;; terminal shell other window
-    "p E" 'projectile-edit-dir-locals
-    
-    ;; project workspace management commands
-    "p w" '(:ignore t :which-key "workspaces")
-    "p w c" 'treemacs-create-workspace
-    "p w C" 'treemacs-create-workspace-from-project
-    "p w a" 'treemacs-projectile             ;; it adds a new project to the workspace
-    "p w e" 'treemacs-edit-workspaces
-    "p w r" 'treemacs-remove-project-from-workspace
-    "p w s" 'treemacs-switch-workspace
-    "p w o" 'projectile-switch-open-project
-    "p w O" 'consult-projectile-switch-project
+      ;; code details navigation
+      "p c" '(:ignore t :which-key "code")
+      "p c e" 'consult-compile-error
+      "p c g" 'consult-git-grep
+      "p c s" 'lsp-treemacs-symbols
+      "p c h" 'lsp-treemacs-code-hierarchy ;; LSP must support this
+      "p c i" 'lsp-treemacs-implementations ;; LSP must support this
 
-    ;; TODO: try in the future use perspective again
-    ;; project perspectives (workspaces)
-    ;; "p p" '(:ignore t :which-key "perspectives")
-    ;; "p p c" 'persp-switch
-    ;; "p p i" 'persp-ibuffer
-    ;; "p p k" 'persp-kill
-    ;; "p p s" 'persp-state-save
-    ;; "p p l" 'persp-state-load
-    ;; "p p r" 'persp-state-restore
-    ;; "p p o" 'projectile-persp-switch-project
-    
-    ;; project file and directory management
-    "p f" '(:ignore t :which-key "file/dir")
-    "p f d" 'consult-projectile-find-dir    
-    "p f o" 'consult-projectile-find-file
-    "p f r" 'consult-projectile-recentf
-    "p f t" 'projectile-find-test-file
-    
-    ;; project search and replace
-    "p s" '(:ignore t :which-key "search")
-    "p s f" 'projectile-find-references
-    "p s g" 'projectile-ripgrep
-    "p s r" 'projectile-replace
-    "p s R" 'projectile-replace-regexp
-    
-    ;; buffers in this project
-    "p b" '(:ignore t :which-key "buffers")
-    "p b s" 'projectile-save-project-buffers
-    "p b b" 'consult-projectile-switch-to-buffer
-    "p b r" 'consult-projectile-recentf
-    "p b i" 'projectile-ibuffer
-    
-    ;; execution commands for project
-    "p x" '(:ignore t :which-key "execute")
-    "p x C" 'projectile-configure-project
-    "p x c" 'projectile-compile-project
-    "p x t" 'projectile-test-project
-    "p x r" 'projectile-run-project
-    "p x P" 'projectile-package-project
-    "p x I" 'projectile-install-project
-    "p x s" 'projectile-run-shell-command-in-root
-    "p x S" 'projectile-run-async-shell-command-in-root
-
-    ;; code details navigation
-    "p c" '(:ignore t :which-key "code")
-    "p c e" 'consult-compile-error
-    "p c g" 'consult-git-grep
-    "p c s" 'lsp-treemacs-symbols
-    "p c h" 'lsp-treemacs-code-hierarchy ;; LSP must support this
-    "p c i" 'lsp-treemacs-implementations ;; LSP must support this
-
-    ;; commands dedicated to the LSP tasks
-    "p l" '(:ignore t :which-key "LSP")
-    "p l a" 'lsp-execute-code-action
-    ;"p l !" 'flycheck-list-errors ;; diagnostics list in other buffer
-    "p l d" 'consult-flycheck ;; show diagnostics erros using consult
-    "p l D" 'lsp-ui-flycheck-list ;; show for the whole workspace
-    "p l !" 'flycheck-clear
-    ;; "g d" 'consult-lsp-diagnostics
-    ;; "g y" 'consult-lsp-file-symbols
-    ;; "g Y" 'consult-lsp-symbols
-
-    ;; TODO: add entry for the visual mode (ryo)
-    ;; TODO: put the flycheck commands here for "!" key
-    
-    )
-
+      ;; commands dedicated to the LSP tasks
+      "p l" '(:ignore t :which-key "LSP")
+      "p l a" 'lsp-execute-code-action
+      ;"p l !" 'flycheck-list-errors ;; diagnostics list in other buffer
+      "p l d" 'consult-flycheck ;; show diagnostics erros using consult
+      "p l D" 'lsp-ui-flycheck-list ;; show for the whole workspace
+      "p l !" 'flycheck-clear
+      ;; "g d" 'consult-lsp-diagnostics
+      ;; "g y" 'consult-lsp-file-symbols
+      ;; "g Y" 'consult-lsp-symbols      
+      )
   #+end_src
 
