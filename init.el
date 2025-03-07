@@ -73,6 +73,10 @@
 
 ;; shift do not select, use hydras instead (cut/delete/copy/move operations)
 (setq shift-select-mode nil)
+(setq mouse-drag-copy-region nil)
+(global-unset-key [down-mouse-1]) ;; Desativa a seleção com o botão esquerdo
+(global-unset-key [drag-mouse-1]) ;; Remove a funcionalidade de arrastar para selecionar
+;;(global-unset-key [mouse-1])      ;; Bloqueia o clique para iniciar seleção
 
 ;; define the straight.el
 (defvar bootstrap-version)
@@ -701,38 +705,199 @@
   ;; - python-lsp-server (pip install 'python-lsp-server[all]')
   ;; - python-debugpy
   (use-package python-mode
-    :hook (python-mode . lsp-deferred))
+    :hook (python-mode . lsp-deferred)
+    :config
+  (setq python-shell-interpreter "cd ~/.config/pixi_envs && pixi run -e devenv-python python")
+  ;; (setq lsp-pylsp-server-command "cd ~/.config/pixi_envs && pixi run -e devenv-python pylsp")
+  ;; (setq lsp-pylsp-plugins-preload-enabled nil)
+  ;; disable the default plugins
+  ;; (setq lsp-pylsp-plugins-autopep8-enabled nil)
+  ;; (setq lsp-pylsp-plugins-flake8-enabled nil)
+  ;; (setq lsp-pylsp-plugins-isort-enabled nil)
+  ;; (setq lsp-pylsp-plugins-pycodestyle-enabled nil)
+  ;; (setq lsp-pylsp-plugins-pyflakes-enabled nil)
+  ;; (setq lsp-pylsp-plugins-pylint-enabled nil)
+  ;; (setq lsp-pylsp-plugins-yapf-enabled nil)
+  ;; enable the tools used for the project
+  ;; (setq lsp-pylsp-plugins-jedi-completion-enabled t)
+  ;; (setq lsp-pylsp-plugins-jedi-environment "~/.config/pixi_envs/.pixi/envs/devenv-python")
+  ;; (setq lsp-pylsp-plugins-rope-autoimport-enabled nil)
+  ;; (setq lsp-pylsp-plugins-rope-completion-enabled t)
+  ;; (setq lsp-pylsp-plugins-rope-autoimport-code-actions-enabled t)
+  ;; (setq lsp-pylsp-plugins-rope-autoimport-completions-enabled t)
+  ;; (setq lsp-pylsp-plugins-mccabe-enabled t)
+  ;; for mypy remember to change also in the pyproject.toml file section
+  ;; see the pylsp-mypy for more info
+  ;; (setq lsp-pylsp-plugins-mypy-enabled nil) ;; disable for now
+  ;; (setq lsp-pylsp-plugins-mypy-live-mode t)
+  ;; (setq lsp-pylsp-plugins-ruff-executable "cd ~/.config/pixi_envs && pixi run -e devenv-python ruff")
+  ;; (setq lsp-pylsp-plugins-ruff-enabled t)
+  ;; (setq lsp-pylsp-plugins-ruff-config "~/.config/pixi_envs/ruff.toml")
+  
+  
+  (setq python-pytest-executable "cd ~/.config/pixi_envs && pixi run -e devenv-python pytest")
+  (setq python-pytest-unsaved-buffers-behavior 'save-all)
+  (setq python-pytest-confirm nil)
+  (setq dap-python-debugger "cd ~/.config/pixi_envs && pixi run -e devenv-python debugpy"))
 
+(use-package lsp-jedi
+  :ensure t)
+  
   (use-package python-pytest
     :custom
-    (python-pytest-confirm t))
+    (python-pytest-confirm t)
+    :config
+    ;; just an extra `-y' after the `-x' suffix
+    (transient-append-suffix
+      'python-pytest-dispatch
+      "-x"
+      '("-P" "IPython Debugger" "--pdbcls=IPython.terminal.debugger:TerminalPdb")))
 
   ;; it needs dependency of taplo
   (use-package toml-mode
-    :hook (toml-mode . lsp-deferred))
+    :hook (toml-mode . lsp-deferred)
+    :config
+    (setq lsp-toml-command "cd ~/.config/pixi_envs && pixi run -e devenv-configs taplo"))
 
   (use-package yaml-mode
     ;; :mode "\\.ya?ml\\'"
-    :hook (yaml-mode . lsp-deferred))
+    :hook (yaml-mode . lsp-deferred)
+    :config
+    (setq lsp-yaml-server-command "cd ~/.config/pixi_envs && pixi run -e devenv-configs yaml-language-server --stdio"))
 
   ;; it needs dependency of fortls
   (use-package fortran
     :straight nil
-    :hook (fortran-mode . lsp-deferred))
-  (use-package f90
-   :straight nil
-   :hook (f90-mode . lsp-deferred))
-
-
-  (use-package dap-mode
-    :after lsp-mode
-    :hook (python-mode . dap-mode)
+    :hook (fortran-mode . lsp-deferred)
     :config
-    (require 'dap-python))
+    (setq lsp-clients-fortls-executable "cd ~/.config/pixi_envs && pixi run -e devenv-configs fortls"))
+  (use-package f90
+    :straight nil
+    :hook (f90-mode . lsp-deferred))
 
-;; (use-package dap-mode
-;; :hook ((lsp-mode . dap-mode)
-       ;; (lsp-mode . dap-ui-mode)))
+  (use-package racket-mode
+  :ensure t
+  :hook (racket-mode . lsp-deferred)
+  :config
+  ;;(add-to-list 'exec-path "~/.config/pixi_envs/.pixi/envs/devenv-racket/bin")
+  ;; (setq racket-program "cd ~/.config/pixi_envs && pixi run -e devenv-racket racket")
+  (setq lsp-racket-langserver-command "cd ~/.config/pixi_envs && pixi run -e devenv-racket racket --lib racket-langserver")
+  (setq racket-show-functions 't)) ;; Mostra informações ao passar o cursor
+
+
+  (use-package dape
+    ;; :preface
+    ;; By default dape shares the same keybinding prefix as `gud'
+    ;; If you do not want to use any prefix, set it to nil.
+    ;; (setq dape-key-prefix "\C-x\C-a")
+
+    ;; :hook
+    ;; Save breakpoints on quit
+    ;; (kill-emacs . dape-breakpoint-save)
+    ;; Load breakpoints on startup
+    ;; (after-init . dape-breakpoint-load)
+
+    :config
+    ;; Turn on global bindings for setting breakpoints with mouse
+    ;; (dape-breakpoint-global-mode)
+
+    ;; Info buffers to the right
+    ;; (setq dape-buffer-window-arrangement 'right)
+
+    ;; Info buffers like gud (gdb-mi)
+    ;; (setq dape-buffer-window-arrangement 'gud)
+    ;; (setq dape-info-hide-mode-line nil)
+
+    ;; Pulse source line (performance hit)
+    ;; (add-hook 'dape-display-source-hook 'pulse-momentary-highlight-one-line)
+
+    ;; Showing inlay hints
+    ;; (setq dape-inlay-hints t)
+
+    ;; Save buffers on startup, useful for interpreted languages
+    ;; (add-hook 'dape-start-hook (lambda () (save-some-buffers t t)))
+
+    ;; Kill compile buffer on build success
+    ;; (add-hook 'dape-compile-hook 'kill-buffer)
+
+    ;; Projectile users
+    (setq dape-cwd-function 'projectile-project-root)
+    ;;
+    ;;(setq dape-python-command "pixi run -e=devnev python")
+    )
+
+   (add-to-list 'dape-configs
+             `(debugpy-project
+               modes (python-ts-mode python-mode)
+               ensure dape-ensure-command
+               command "~/config/pixi_envs/scripts/start_python_debug.bash"
+               command-args ("--host" "0.0.0.0" "--port" :autoport)
+               port :autoport
+               :type "python"             
+               :request "launch"
+               :args []
+               :stopOnEntry t
+               :console "externalTerminal"
+               :showReturnValue t
+               :justMyCode nil
+               :cwd dape-cwd-fn
+               ;:env ()
+               ))
+  ;; (add-to-list 'dape-configs
+  ;;           `(debugpy-custom
+  ;;             modes (python-ts-mode python-mode)
+  ;;             ensure dape-ensure-command
+  ;;             command "/home/gabriel/Projects/Fluxus/scripts/start_debug.bash"
+  ;;             ;;command "pixi"
+  ;;             command-args ("--port" :autoport)
+  ;;             host "0.0.0.0"
+  ;;             port :autoport
+  ;;             :type "python"             
+  ;;             :request "launch"
+  ;;             :args []
+  ;;             :stopOnEntry t
+  ;;             :console "externalTerminal"
+  ;;             :showReturnValue t
+  ;;             :justMyCode nil
+  ;;             :cwd dape-cwd-fn
+  ;;             ;; the pixi run script does not set the env variables, as workaround it just sets manually
+  ;;             ;;:env (:PYTHONPATH "/home/gabriel/Projects/Fluxus"
+  ;;               ;;                :PIXI_PROJECT_NAME "Fluxus"
+  ;;                ;;               :SIMULATOR_SOURCE_PATH "/home/gabriel/Projects/Fluxus/simulator"
+  ;;                 ;;              :CONTROLLER_PATH "/home/gabriel/Projects/Fluxus/controller"
+  ;;                 ;;  :DEBUG "true"
+  ;;                   ;;)
+  ;;            ))
+  ;; (defun my/dape-debug-buffer ()
+  ;; "Inicia depuração do arquivo do buffer atual."
+  ;; (interactive)
+  ;; (dape-start
+  ;;  `(:type "python"
+  ;;    :request "launch"
+  ;;    :name "Debug buffer"
+  ;;    :program ,(buffer-file-name)
+  ;;    :cwd ,(lsp-workspace-root)
+  ;;  ;;  :console "integratedTerminal")
+  ;;  )
+  ;; )
+
+  ;; Enable repeat mode for more ergonomic `dape' use
+  (use-package repeat
+    :config
+    (repeat-mode))
+
+
+  ;; (use-package dap-mode
+  ;;   :after lsp-mode
+  ;;   :hook ((lsp-mode . dap-mode)
+  ;;          (lsp-mode . dap-ui-mode))
+  ;;   ;; :hook (python-mode . dap-mode)
+  ;;   :config
+  ;;   (setq dap-python-debugger 'debugpy))
+
+  ;; (use-package dap-mode
+  ;; :hook ((lsp-mode . dap-mode)
+  ;;        (lsp-mode . dap-ui-mode)))
 
   ;; configure the lsp-docker in order to run the LSP servers inside the containers
   ;; and then do not need to install anything directly in my machine
@@ -746,11 +911,11 @@
   ;;  :client-packages lsp-docker-client-packages
   ;;  :client-configs lsp-docker-client-configs)
 
-;; use treemacs to help with the code data
-(use-package lsp-treemacs
-  :after (lsp-mode treemacs)
-  :config
-  (lsp-treemacs-sync-mode 1))
+  ;; use treemacs to help with the code data
+  (use-package lsp-treemacs
+    :after (lsp-mode treemacs)
+    :config
+    (lsp-treemacs-sync-mode 1))
 
 (use-package hydra)
 (defvar my-hydra-cut-or-copy 'copy
@@ -789,6 +954,7 @@
   ("q" my-hydra-deactivate-mark-and-quit "Quit" :exit t) 
   ("a" my-hydra-action "Accept" :exit t)
   ("-" pulsar-pulse-line "Pulse")
+  ("r" set-mark-command "Reset Mark") 
   ;; movements
   ("j" backward-char "← Char")
   ("k" next-line "↓ Line")
@@ -1072,15 +1238,15 @@
   "p b i" 'projectile-ibuffer
   
   ;; execution commands for project
-  "p x" '(:ignore t :which-key "execute")
-  "p x C" 'projectile-configure-project
-  "p x c" 'projectile-compile-project
-  "p x t" 'projectile-test-project
-  "p x r" 'projectile-run-project
-  "p x P" 'projectile-package-project
-  "p x I" 'projectile-install-project
-  "p x s" 'projectile-run-shell-command-in-root
-  "p x S" 'projectile-run-async-shell-command-in-root
+  "p e" '(:ignore t :which-key "execute")
+  "p e C" 'projectile-configure-project
+  "p e c" 'projectile-compile-project
+  "p e t" 'projectile-test-project
+  "p e r" 'projectile-run-project
+  "p e P" 'projectile-package-project
+  "p e I" 'projectile-install-project
+  "p e s" 'projectile-run-shell-command-in-root
+  "p e S" 'projectile-run-async-shell-command-in-root
 
   ;; code details navigation
   "p c" '(:ignore t :which-key "code")
